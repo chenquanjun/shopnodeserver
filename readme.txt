@@ -1,24 +1,36 @@
-½éÉÜ£º
-Ò»Ôª¹ºµÄnodejs·şÎñ¶Ë
+A simple shopping server with nodejs
 
-°²×°£º
-1¡¢°²×°nodejs
-2¡¢ÔÚ¹¤×÷Ä¿Â¼ÊäÈënpm install°²×°²å¼ş
+ä»‹ç»ï¼š
+ä¸€å…ƒè´­çš„nodejsæœåŠ¡ç«¯
 
-ÔËĞĞ:
+å®‰è£…ï¼š
+1ã€å®‰è£…nodejs
+2ã€åœ¨å·¥ä½œç›®å½•è¾“å…¥npm installå®‰è£…æ’ä»¶
+3ã€å®‰è£…mongod db
+
+è¿è¡Œ:
 npm start
-»òÕß pm2 start startserver.json
+æˆ–è€… pm2 start startserver.json
 
-Æô¶¯Êı¾İ¿â
-mongod ¡ª-config /usr/local/etc/mongod.conf
+å¯åŠ¨æ•°æ®åº“
+mongod â€•-config /usr/local/etc/mongod.conf
 
-ÏîÄ¿½á¹¹:
-actions: Ö´ĞĞ
-routes£ºÂ·ÓÉ·Ö·¢
-constants£º³£Á¿¶¨Òå
-public£º¾²Ì¬ÎÄ¼ş£¬js¿â¡¢cssÎÄ¼ş¡¢Í¼Æ¬
-tools£º×Ô¶¨ÒåµÄ¹¤¾ß
-view£º½çÃæ
-app.js£ºÏîÄ¿Èë¿Ú
-project.json£ºÏîÄ¿ÅäÖÃ
+htmlåå°:
+æ·»åŠ å•†å“ http://localhost:8000/product/add
+ç¼–è¾‘å•†å“ http://localhost:8000/product/edit?gid=xx
+å•†å“åˆ—è¡¨ http://localhost:8000/product/list
+
+API:
+è·å–å•†å“æœŸæ•°åˆ—è¡¨ current_pageï¼šé¡µæ•° query_stateï¼šå•†å“çŠ¶æ€
+http://localhost:8000/api/jsonData?action=get_goods&current_page=0&query_state=1
+
+é¡¹ç›®ç»“æ„:
+actions: æ‰§è¡Œ
+routesï¼šè·¯ç”±åˆ†å‘
+constantsï¼šå¸¸é‡å®šä¹‰
+publicï¼šé™æ€æ–‡ä»¶ï¼Œjsåº“ã€cssæ–‡ä»¶ã€å›¾ç‰‡
+toolsï¼šè‡ªå®šä¹‰çš„å·¥å…·
+viewï¼šç•Œé¢
+app.jsï¼šé¡¹ç›®å…¥å£
+project.jsonï¼šé¡¹ç›®é…ç½®
 
