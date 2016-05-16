@@ -28,7 +28,7 @@ router.get('/', (req, res, next) => {
 		if (err) {
 			res.jsonp({ result: 1, err : err })
 		}else{
-			res.jsonp(Object.assign({ result: 0 }, result))
+			res.jsonp(Object.assign({ result: 0, state:0 }, result))
 		}
 	})
 })

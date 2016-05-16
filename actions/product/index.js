@@ -14,8 +14,9 @@ const productStatus = require('../../constants/status').product
 const productModel = require('../../models/product')
 const Product = productModel.Product
 
-const listAllSelectParams = 'gid imageIds name price status'
-const listPeriodParams = 'status price'
+const allInfoParams = 'gid imageIds name price status'
+const periodListParams = 'gid imageIds name price'
+const periodInfoParams = 'status price'
 
 //初始化
 exports.init = (callback) => {
@@ -29,7 +30,7 @@ exports.init = (callback) => {
 exports.getProductPeriodInfo = (gid, callback) =>{
 	Product
 		.findOne({gid : gid})
-		.select(listPeriodParams)
+		.select(periodInfoParams)
 		.exec(callback)
 }
 
@@ -52,7 +53,7 @@ exports.getProductList = (page, callback) => {
 			let maxQueryNum = limits.PRODUCT_QUERY_MAX_NUM
  			Product
  				.find()
- 				.select(listAllSelectParams)
+ 				.select(allInfoParams)
  				.limit(maxQueryNum)
  				.skip(page * maxQueryNum)
 				.exec((err, list) => {
@@ -84,7 +85,7 @@ exports.getProductListByGidList = (gids, callback) => {
 		(callback) => { 
 			Product
 				.find({'gid': {'$in' : gids}})
-				.select(listAllSelectParams)
+				.select(periodListParams)
 				.exec((err, list) => {
 					if (err) {
 						callback(err)
@@ -113,7 +114,7 @@ exports.getProductByGid = (gid, callback) =>{
 		(callback) => { //
  			Product
  				.findOne({gid : gid})
- 				.select(listAllSelectParams)
+ 				.select(allInfoParams)
 				.exec(callback)
 		},
 	    (productInfo, callback) => { //
