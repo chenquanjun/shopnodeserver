@@ -1,0 +1,200 @@
+extends ../layout
+
+block css
+	link(rel='stylesheet', href='/stylesheets/fileinput.css')
+	link(rel='stylesheet', href='/stylesheets/product-add.css')
+
+block content
+	each textInfo in textParams
+		.form-group
+			label= textInfo.name
+			input.form-control(
+				type= textInfo.inputType
+				name= textInfo.name
+				placeholder= textInfo.placeHolder
+				textType
+			)
+
+	each fileInfo in fileParams
+		.form-group
+			label= fileInfo.name
+			input#input-image.file(
+				type= 'file'
+				multiple
+				name= fileInfo.name
+				data-overwrite-initial='false'
+				data-min-file-count='2'
+			)
+			#errorBlock.help-block
+
+	button.btn.btn-default.product-add-btn(onclick='onAddProduct()')
+		span.glyphicon.glyphicon-plus(aria-hidden='true') 
+		| 添加
+
+block scripts
+
+	script(src='/javascripts/fileinput.js')
+	script(src='/javascripts/fileinput_locale_zh.js')
+	script.
+		var tFooter = '<div class="file-thumbnail-footer">\n' +
+		'    {progress} {actions}\n' +
+		'</div>';
+
+		var tMain1 = '{preview}\n' +
+			'<div class="kv-upload-progress hide"></div>\n' +
+			'<div class="input-group {class}">\n' +
+			'   {caption}\n' +
+			'   <div class="input-group-btn">\n' +
+			'       {remove}\n' +
+			'       {cancel}\n' +
+			'       {browse}\n' +
+			'   </div>\n' +
+			'</div>';
+
+		$('#input-image').fileinput({
+			'language' : 'zh',
+			//- 'uploadUrl' : null, // you must set a valid URL here else you will get an error
+			'allowedFileExtensions' : ['jpg','png', 'jpeg'],
+			'overwriteInitial': false,
+			'maxFileSize': 2000,
+			'maxFilesNum': 10,
+			'dropZoneEnabled' : true,
+			//- 'showCaption' : false,
+			//- 'showRemove' : false,
+			'showUpload' : false, 
+			'resizeImage' : true,
+			'maxImageWidth' : 100,
+			'layoutTemplates' : {
+				'footer' : tFooter,
+
+			},
+			'elErrorContainer': '#errorBlock',
+			slugCallback: function(filename) {
+			    return filename.replace('(', '_').replace(']', '_');
+			}
+		});
+
+		$(function(){
+			var m_base64Arr = null
+			var m_isRefreshFinish = false
+			var m_totalBase64Num = 0
+
+			var addBase64Func = function(base64){
+				m_base64Arr.push(base64)
+
+				if (m_base64Arr.length < m_totalBase64Num){
+					return
+				}
+
+				m_isRefreshFinish = true
+			}
+
+			var getBase64Func = function(img){
+				var width = img.width
+				var height = img.height
+				var canvas = document.createElement('canvas')
+				var context = canvas.getContext('2d')
+				canvas.width = width
+				canvas.height = height
+				context.drawImage(img, 0, 0, width, height) 
+				var base64 = canvas.toDataURL('image/jpeg', 1)
+				return base64
+			}
+
+			var dealImageFunc = function(blob){
+				(function(){
+		            var img = new Image();
+					img.src = blob;
+
+					if (img.complete){
+						var base64 = getBase64Func(img)
+						addBase64Func(base64)
+					}else{
+						img.onLoad = function(){
+							var base64 = getBase64Func(img)
+							addBase64Func(base64)
+						}
+					}
+				})()
+			}
+
+			var onImagesRefresh = function(loadedImages){
+
+
+				var tmpBlobArr = []
+				for (var i in loadedImages){
+					var pImg = loadedImages[i]
+					var img = pImg.img[0]
+					var src = img.src
+
+					if (src.substring(0, 4) == "blob"){
+						tmpBlobArr.push(src)
+					}
+				}
+
+				if (tmpBlobArr.length > 0){
+					m_base64Arr = []
+					m_totalBase64Num = tmpBlobArr.length
+					m_isRefreshFinish = false
+
+					for (var i in tmpBlobArr){
+						var blob = tmpBlobArr[i]
+						dealImageFunc(blob)
+					}
+				}else{
+					m_base64Arr = null
+					m_totalBase64Num = 0
+					m_isRefreshFinish = false
+				}
+			}
+
+
+			$('#input-image').on('fileimagesloaded', function(event, loadedImages) {
+				onImagesRefresh(loadedImages)
+			});
+
+			$('#input-image').on('fileclear', function(event, loadedImages) {
+				onImagesRefresh([])
+			});
+
+
+			onAddProduct = function(){
+				if (!m_base64Arr){
+					alert("没有添加图片")
+					return
+				}
+
+				if (!m_isRefreshFinish){
+					alert("正在处理图片")
+					return
+				}
+
+				var params = {}
+
+				$('input[textType]').map(function(index, element){
+					element = $(element)
+					var name = element.attr("name")
+					var type = element.attr("type")
+					params[name] = element.val()
+				})
+
+
+				params.images = m_base64Arr
+				$.post('', params, function(data, status){
+					if (status !== 'success'){
+						alert("添加失败")
+						return
+					}
+
+					var result = data.result
+
+					if (result != 0){
+						alert("添加失败，错误:" + data.err)
+						return
+					}
+					alert("添加成功!产品gid:" + data.gid)
+					window.location = "edit?gid=" + data.gid					
+				})
+			};
+
+		});

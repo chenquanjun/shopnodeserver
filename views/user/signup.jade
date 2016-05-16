@@ -1,0 +1,167 @@
+extends ../layout
+
+block css
+	link(rel='stylesheet', href='/stylesheets/fileinput.css')
+	link(rel='stylesheet', href='/stylesheets/user-signup.css')
+
+block content
+	each textInfo in textParams
+		.form-group
+			label= textInfo.title
+			input.form-control(
+				type= textInfo.inputType
+				name= textInfo.name
+				placeholder= textInfo.placeHolder
+				textType
+			)
+	each fileInfo in fileParams
+		.form-group
+			label= fileInfo.title
+			#kv-avatar-errors.center-block
+			.text-center
+				.kv-avatar.center-block.kv-box
+					input#input-image.file-loading(
+						type= 'file'
+						name= fileInfo.name
+					)
+	.form-group
+		.signup-box
+			button.btn.btn-success.signup-btn(onclick='onSignup()')
+				span.glyphicon.glyphicon-plus(aria-hidden='true') 
+				| 注册
+
+
+block scripts
+	script(src='/javascripts/fileinput.js')
+	script(src='/javascripts/fileinput_locale_zh.js')
+	script.
+		$(function(){
+			var tFooter = '<div class="file-thumbnail-footer">\n' +
+			'</div>';
+
+			$("#input-image").fileinput({
+				overwriteInitial: true,
+				maxFileSize: 1500,
+				showClose: false,
+				showCaption: false,
+				browseLabel: '',
+				removeLabel: '',
+				browseIcon: '<i class="glyphicon glyphicon-folder-open"></i>',
+				removeIcon: '<i class="glyphicon glyphicon-remove"></i>',
+				removeTitle: 'Cancel or reset changes',
+				elErrorContainer: '#kv-avatar-errors',
+				msgErrorClass: 'alert alert-block alert-danger',
+				defaultPreviewContent: '<img src="/images/default_avatar_male.jpg" alt="Your Avatar" style="width:160px">',
+				layoutTemplates: {
+					main2: '{preview} {remove} {browse}',
+					footer : tFooter,
+				},
+				allowedFileExtensions: ["jpg", "png", "gif"]
+			});
+		});
+
+		$(function(){
+			var getBase64Func = function(blob){
+				var img = new Image()
+				img.src = blob
+				var width = img.width
+				var height = img.height
+				var canvas = document.createElement('canvas')
+				var context = canvas.getContext('2d')
+				canvas.width = width
+				canvas.height = height
+				context.drawImage(img, 0, 0, width, height) 
+				var base64 = canvas.toDataURL('image/jpeg', 1)
+				return base64
+			}
+
+			var getAttr = function(name){
+				var element = $('input[name=' + name + ']')
+				return element.val()
+			}
+
+			var isString = function(obj) {
+			    return typeof obj === 'string' || Object.prototype.toString.call(obj) === '[object String]';
+			}
+
+			onSignup = function () {
+				//参数检查
+
+				var userName = getAttr('userName')
+
+				if (!(/^[A-Za-z0-9]+$/.test(userName))){
+					alert('用户名必须是字母或者数字')
+					return
+				}
+
+				var nickName = getAttr('nickName')
+
+				if (!isString(nickName)){
+					alert('昵称为空')
+					return
+				}
+
+				if (nickName.length < 2 || nickName.length > 10){
+					alert('昵称长度为2到10')
+					return
+				}
+
+				var password = getAttr('password')
+				var repeatPassword = getAttr('repeatPassword')
+
+				if (password !== repeatPassword){
+					alert('两次密码不相同')
+					return
+				}
+
+
+				if (!(/^[A-Za-z0-9]+$/.test(password))){
+					alert('密码必须是字母或者数字')
+					return
+				}
+
+				if (password.length < 8){
+					alert('密码太短')
+					return
+				}
+
+				var params = {
+					userName : userName,
+					password : password,
+					nickName : nickName,
+				}
+
+				//头像
+				var image = null
+
+				var $frame = $('.file-preview-frame')
+				var $img = $frame.children('img')
+				var img = $img[0]
+
+				if (img){
+					var src = img.src
+					if (src.substring(0, 4) == "blob"){
+						var base64 = getBase64Func(src)
+						params.image = base64
+					}
+				}
+
+
+
+				$.post('', params, function(data, status){
+					if (status != 'success'){
+						alert("注册失败")
+						return
+					}
+
+					var result = data.result
+
+					if (result != 0){
+						alert("注册失败，错误:" + data.err)
+						return
+					}
+					alert("注册成功，用户id:" + data.userId)
+				})
+			}
+
+		});

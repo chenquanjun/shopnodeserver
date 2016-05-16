@@ -1,0 +1,36 @@
+.center-block {
+    display: block;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.kv-box{
+    width: 172px;
+}
+
+.kv-avatar .file-preview-frame,.kv-avatar .file-preview-frame:hover {
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    text-align: center;
+}
+.kv-avatar .file-input {
+    display: table-cell;
+    max-width: 220px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.signup-btn {
+    width: 30%;
+    height: 40px;
+}
+
+.signup-box{
+    text-align: center;
+    margin-left: auto; 
+    margin-right: auto;
+}

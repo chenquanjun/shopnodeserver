@@ -1,0 +1,211 @@
+extends ../layout
+
+mixin createBtn(info)
+	button.btn.table-btn(onclick=info.callback, style=info.styleType, class=info.btnIcon)
+		span.glyphicon(aria-hidden='true' class=info.wordIcon) 
+		=info.name
+
+mixin createHrefBtn(name, href, isDisabled)
+	if isDisabled
+		a.btn.btn-default.href-btn(role="button", disabled)
+			=name
+	else
+		a.btn.btn-default.href-btn(href=href role="button")
+			=name
+	
+block css
+	link(rel='stylesheet', href='/stylesheets/product-list.css')
+
+block content
+	table.table.table-striped.table-bordered
+		thred
+			tr
+				th gid
+				th 产品名字
+				th 产品价格
+				th 图片
+				th 状态
+				th 功能
+		tbody
+			- var productNum = 0
+			- if (productList)
+				each product in productList
+					- productNum += 1
+					- var gid = product.gid
+					tr.product-panel(gid=gid)
+						th=gid
+						th=product.name
+						th=product.price
+						th
+							each image in product.images
+								- var fileName = imagePath + image
+								.list-image-box
+									.list-image
+										img(src=fileName onload='onImageLoaded(this)')
+						th#status
+							if (product.status == 1)
+								label='已下架'
+							else if (product.status == 0)
+								label='正常'
+							else
+								label='未知'
+						th#button
+							+createBtn({name : '修改', callback : 'onEditProduct(' + gid + ')', 
+											  btnIcon : 'btn-info', wordIcon : 'glyphicon-pencil'})
+
+							- var displayEnabled = (product.status != 0) ? 'display:inherit' : 'display:none'
+							- var displayDisabled = (product.status == 0) ? 'display:inherit' : 'display:none'
+
+							+createBtn({name : '上架', callback : 'onProductEnabled(' + gid + ')', 
+											  styleType: displayEnabled, btnIcon : 'btn-success', wordIcon : 'glyphicon-ok-circle'})
+
+							+createBtn({name : '下架', callback : 'onProductDisabled(' + gid + ')', 
+											  styleType: displayDisabled, btnIcon : 'btn-warning', wordIcon : 'glyphicon-remove-circle'})
+
+							+createBtn({name : '强制下架', callback : 'onProductForceDisabled(' + gid + ')', 
+											  btnIcon : 'btn-danger', wordIcon : 'glyphicon-ban-circle'})
+
+			- else
+				= productNum = 10
+			- for (var i = 0; i < 10 - productNum; i++)
+				tr
+					th
+					th
+					th
+					th
+					th
+					th
+
+	.form-horizontal
+		.form-group
+		#page
+			label.col-sm-2.control-label='当前页数' 
+			p.col-sm-2.form-control-static= page + '/' + totalPageNum
+			label.col-sm-2.control-label='当前产品总数'
+			p.col-sm-2.form-control-static= totalProductNum
+			-var lastPage = "list?page=" + (parseInt(page) - 1)
+			-var nextPage = "list?page=" + (parseInt(page) + 1)
+			if (page <= 1)
+				-var isLastDisabled = true
+			if (page >= totalPageNum)
+				-var isNextDisabled = true
+			+createHrefBtn('上一页', lastPage, isLastDisabled)
+			+createHrefBtn('下一页', nextPage, isNextDisabled)
+
+block scripts
+	script.
+		getImageCropRect_ = function(width, height) {
+		    var maxWidth = 50;
+		    var maxHeight = 50;
+		    var param = {
+				top: 0,
+				left: 0,
+				width: width,
+				height: height
+		    };
+		    if (width > maxWidth || height > maxHeight) {
+				var rateWidth = width / maxWidth;
+				var rateHeight = height / maxHeight;
+				if (rateWidth > rateHeight) {
+					param.width = maxWidth;
+					param.height = Math.round(height / rateWidth);
+				} else {
+					param.width = Math.round(width / rateHeight);
+					param.height = maxHeight;
+				}
+		    }
+		    param.left = Math.round((maxWidth - param.width) / 2);
+		    param.top = Math.round((maxHeight - param.height) / 2);
+		    return param;
+		}
+
+		onImageLoaded = function(image){
+			var img = $(image);
+			var width = img.width();
+			var height = img.height();
+			var params = getImageCropRect_(width, height);
+			img.width(params.width);
+			img.height(params.height);
+			img.css("margin-left", params.left);
+			img.css("margin-top", params.top);
+		}
+
+		$(function(){
+			onEditProduct = function(gid){
+				window.location = "edit?gid=" + gid
+			}
+
+			onStatusChange = function(gid, status){
+				var element = $('.product-panel[gid=' + gid + ']')
+				var statusLabel = element.children("#status")
+				var button = element.children("#button")
+				
+				var statusEnabled
+				var statusDisabled
+				switch(status){
+					case 0:
+						statusLabel.text('正常')
+						statusEnabled = 'none'
+						statusDisabled = 'inherit'
+						break;
+					case 1:
+						statusLabel.text('已下架')
+						statusEnabled = 'inherit'
+						statusDisabled = 'none'
+						break;
+					default:
+						statusLabel.text('未知')
+						statusEnabled = 'inherit'
+						statusDisabled = 'none'
+				}
+
+				button.children(".btn-success").css('display', statusEnabled)
+				button.children(".btn-warning").css('display', statusDisabled)
+
+			}
+
+			setStatus = function(gid, status, isForce){
+				var params = {
+					gid : gid,
+					status : status,
+					
+				}
+
+				if (isForce){
+					params.isForce = 1
+				}
+
+				$.post('status', params, function(data, rcvStatus){
+					if (rcvStatus != 'success'){
+						alert("修改失败")
+						return
+					}
+
+					var result = data.result
+
+					if (result != 0){
+						alert("修改失败，错误:" + data.err)
+						return
+					}
+					//- alert("修改成功，产品gid:" + data.gid)
+					onStatusChange(gid, status)
+				})
+			}
+
+			onProductEnabled = function(gid){
+				setStatus(gid, 0)
+			}
+
+			onProductDisabled = function(gid){
+				setStatus(gid, 1)
+			}
+
+			onProductForceDisabled = function(gid){
+				setStatus(gid, 1, 1)
+			}
+
+
+			onDeleteProduct = function(event){
+				console.warn(event)
+			}
+		});

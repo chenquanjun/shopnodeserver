@@ -1,0 +1,167 @@
+extends ../layout
+
+block css
+	link(rel='stylesheet', href='/stylesheets/fileinput.css')
+	link(rel='stylesheet', href='/stylesheets/product-add.css')
+
+block content
+	each textInfo in textParams
+		.form-group
+			label= textInfo.name
+			input.form-control(
+				type= textInfo.inputType
+				name= textInfo.name
+				placeholder= textInfo.placeHolder
+				value = textInfo.value
+				disabled = textInfo.disabled
+				textType
+			)
+
+	each fileInfo in fileParams
+		.form-group
+			label= fileInfo.name
+			input#input-image.file-loading(
+				type= 'file'
+				multiple
+				name= fileInfo.name
+				data-min-file-count='2'
+			)
+			#errorBlock.help-block
+
+	button.btn.btn-default.product-add-btn(onclick='onEditProduct()')
+		span.glyphicon.glyphicon-plus(aria-hidden='true') 
+		| 修改
+
+block scripts
+
+	script(src='/javascripts/fileinput.js')
+	script(src='/javascripts/fileinput_locale_zh.js')
+	script.
+		$(function(){ //图片输入插件初始化
+			var imagesStr = '#{images}'
+			var imagePath = '#{imagePath}'
+
+			var images = imagesStr.split(',')
+
+			//初始图片
+			var initialPreview = [];
+
+			(function(images){
+				for (var i in images){
+					var tmpImage = imagePath + images[i]
+					initialPreview.push('<img src=' + tmpImage + ' class="file-preview-image">')
+				}
+			})(images);
+
+			var tFooter = '<div class="file-thumbnail-footer">\n' +
+			'    {progress} {actions}\n' +
+			'</div>';
+
+			var tActions = '<div class="file-actions">\n' +
+			'    <div class="file-footer-buttons">\n' +
+			'        {delete}{other}' +
+			'    </div>\n' +
+			'    <div class="clearfix"></div>\n' +
+			'</div>';
+
+			$('#input-image').fileinput({
+				'uploadUrl' : '/upload',
+				'initialPreview' : initialPreview,
+				'language' : 'zh',
+				'allowedFileExtensions' : ['jpg','png', 'jpeg'],
+				'overwriteInitial': true,
+				'maxFileSize': 2000,
+				'maxFilesNum': 10,
+				'dropZoneEnabled' : true,
+				'showUpload' : false, 
+				'resizeImage' : true,
+				'maxImageWidth' : 100,
+				'layoutTemplates' : {
+					'footer' : tFooter,
+					'actions' : tActions,
+				},
+				'elErrorContainer': '#errorBlock',
+				slugCallback: function(filename) {
+				    return filename.replace('(', '_').replace(']', '_');
+				}
+			});
+
+		});
+
+		$(function(){
+
+			var getBase64Func = function(blob){
+				var img = new Image()
+				img.src = blob
+				var width = img.width
+				var height = img.height
+				var canvas = document.createElement('canvas')
+				var context = canvas.getContext('2d')
+				canvas.width = width
+				canvas.height = height
+				context.drawImage(img, 0, 0, width, height) 
+				var base64 = canvas.toDataURL('image/jpeg', 1)
+				return base64
+			}
+
+			onEditProduct = function(){
+				var params = {}
+
+				var images = []
+				var oldImages = []
+
+
+				$('.file-preview-frame').map(function(index, element){
+					var img = $(element).children('img')[0]
+					var src = img.src
+					if (src.substring(0, 4) == "blob"){
+						var base64 = getBase64Func(src)
+						images.push(base64)
+					}else{
+						var index = src.indexOf('images/')
+						if (index != -1){
+							index += 7
+							var image = src.substring(index)
+							oldImages.push(image)
+						}
+					}
+				})
+
+				if (images.length > 0){
+					params.images = images
+				}
+
+				if (oldImages.length > 0){
+					params.oldImages = oldImages
+				}
+
+				$('input[textType]').map(function(index, element){
+					element = $(element)
+					var name = element.attr("name")
+					var disabled = element.attr("disabled")
+					if (disabled){
+						params[name] = element.attr("placeholder")
+					}else{
+						params[name] = element.val()
+					}
+					
+				})
+
+				$.post('', params, function(data, status){
+					if (status != 'success'){
+						alert("修改失败")
+						return
+					}
+
+					var result = data.result
+
+					if (result != 0){
+						alert("修改失败，错误:" + data.err)
+						return
+					}
+					alert("修改成功，产品gid:" + data.gid)
+				})
+
+			};
+
+		});

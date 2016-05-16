@@ -1,0 +1,69 @@
+extends ../layout
+
+block css
+	link(rel='stylesheet', href='/stylesheets/user-signin.css')
+
+block content
+	each textInfo in textParams
+		.form-group
+			label= textInfo.title
+			input.form-control(
+				type= textInfo.inputType
+				name= textInfo.name
+				placeholder= textInfo.placeHolder
+				textType
+			)
+
+	.form-group
+		.signin-box
+			button.btn.btn-success.signin-btn(onclick='onSignin()')
+				| 登录
+
+
+block scripts
+	script.
+		$(function(){
+			var getAttr = function(name){
+				var element = $('input[name=' + name + ']')
+				return element.val()
+			}
+
+			onSignin = function () {
+				//参数检查
+
+				var userName = getAttr('userName')
+
+				if (!(/^[A-Za-z0-9]+$/.test(userName))){
+					alert('用户名必须是字母或者数字')
+					return
+				}
+
+				var password = getAttr('password')
+
+				if (!(/^[A-Za-z0-9]+$/.test(password))){
+					alert('密码必须是字母或者数字')
+					return
+				}
+
+				var params = {
+					userName : userName,
+					password : password,
+				}
+
+				$.post('', params, function(data, status){
+					if (status != 'success'){
+						alert("登录失败")
+						return
+					}
+
+					var result = data.result
+
+					if (result != 0){
+						alert("登录失败，错误:" + data.err)
+						return
+					}
+					alert("登录成功，用户id:" + data.userId)
+				})
+			}
+
+		});

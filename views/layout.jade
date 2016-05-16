@@ -1,0 +1,14 @@
+doctype html
+html(lang="zh")
+	head
+		title= title
+		link(rel='stylesheet', href='/stylesheets/bootstrap.min.css')
+		block css
+	body
+		.container
+			block content
+
+			script(src='/javascripts/jquery.min.js')
+			script(src='/javascripts/bootstrap.min.js')
+
+		block scripts
