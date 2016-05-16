@@ -137,22 +137,22 @@ exports.getPeriodList = (currentPage, queryState, callback) =>{
 		.select(queryParams)
 		.limit(maxQueryNum)
 		.skip(currentPage * maxQueryNum)
-	.exec((err, list) => {
-		if (err) {
-			callback(err)
-			return
-		}
-		let results = []
-		list.map(info => results.push({
-			gid : info.gid,
-			pid : info.pid,
-			buyNum : info.buyNum,
-			needNum : info.needNum,
-			finalDate : info.finalDate,
-			period : info.pid,
-		}))
-		callback(err, results)
-	})
+		.exec((err, list) => {
+			if (err) {
+				callback(err)
+				return
+			}
+			let results = []
+			list.map(info => results.push({
+				gid : info.gid,
+				pid : info.pid,
+				buyNum : info.buyNum,
+				needNum : info.needNum,
+				finalDate : info.finalDate,
+				period : info.pid,
+			}))
+			callback(err, results)
+		})
 }
 
 
@@ -165,14 +165,12 @@ let onPeriodStatusChange = (gid, nextStatus, callback) =>{
 let onPeriodStart = (gid, callback) =>{
 	async.waterfall([
 		(callback) => { //判断是否有旧的
-			console.log("period start check")
 			Period
 				.find({gid : gid})
 				.select(listPeriodStatusParams)
 				.exec(callback)
 		},
 		(results, callback) => { 
-			console.log("period start check result", results)
 			if (results) {
 				let curDate = new Date()
 				let isDirty = false
@@ -199,18 +197,15 @@ let onPeriodStart = (gid, callback) =>{
 			}
 		},
 		(callback) => { 
-			console.log("period info")
 			//获取商品期数相关信息
 			productAction.getProductPeriodInfo(gid, callback)
 		},
 	    (productInfo, callback) => { 
-	    	console.log("product status check", productInfo)
 	    	//判断商品是否存在，是否能上架
 	    	let status = productInfo.status
 	    	if (status === productStatus.Normal) {
 	    		//生成pid
 				configAction.genPId(1, (err, pids) =>{
-					console.warn('gen pid', pids)
 					if (err) {
 						callback(err)
 						return
@@ -223,7 +218,6 @@ let onPeriodStart = (gid, callback) =>{
 
 	    },
 	    (pid, productInfo, callback) => { //写入信息
-	    	console.log("period write data base")
 	    	let limitMs =  limits.PRODUCT_PERIOD_LIMIT_TIME
 	    	let startDate = new Date()
 	    	let startTime = startDate.getTime()
@@ -308,7 +302,9 @@ let onPeroidStatusTimerCancel = (gid) =>{
 	console.warn('before', statusTimerDic)
 	let results = []
 
-	statusTimerDic.map((pid, periodInfo)=>{
+	for (let pid in statusTimerDic){
+		let periodInfo = statusTimerDic[pid]
+		let status = periodInfo.status
 		let tmpGid = periodInfo.gid
 		if (tmpGid == gid && status == periodStatus.Buy) {
 			let tmpJob = periodInfo.job
@@ -317,7 +313,7 @@ let onPeroidStatusTimerCancel = (gid) =>{
 			}
 			results.push(pid)
 		}
-	})
+	}
 
 	results.map(pid => delete statusTimerDic[pid])
 	console.warn('end', statusTimerDic)

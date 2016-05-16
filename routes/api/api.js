@@ -26,10 +26,8 @@ router.get('/', (req, res, next) => {
 		},		
 	], (err, result) => { //返回结果
 		if (err) {
-			console.log(err)
 			res.jsonp({ result: 1, err : err })
 		}else{
-			console.log('api get result:', result)
 			res.jsonp(Object.assign({ result: 0 }, result))
 		}
 	})
