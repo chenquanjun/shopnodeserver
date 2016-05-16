@@ -66,6 +66,7 @@ exports.onProductStatusChange = (gid, status, isForce) => {
 	}
 }
 
+//购买商品
 exports.onBuy = (buyInfo, callback) =>{
 	let userId = buyInfo.userId
 	let buyNum = buyInfo.buyNum
@@ -113,6 +114,7 @@ exports.onBuy = (buyInfo, callback) =>{
 
 	    	//判断是否结束
 
+	    	//todo
 
 	    },
 	], (err, result) => { //返回结果
@@ -120,10 +122,7 @@ exports.onBuy = (buyInfo, callback) =>{
 	})
 }
 
-
-
-
-
+//获取期数列表
 exports.getPeriodList = (currentPage, queryState, callback) =>{
 	let queryParams = listQueryStateParams[queryState]
 
@@ -162,7 +161,7 @@ let onPeriodStatusChange = (gid, nextStatus, callback) =>{
 
 } 
 
-
+//期数开始
 let onPeriodStart = (gid, callback) =>{
 	async.waterfall([
 		(callback) => { //判断是否有旧的

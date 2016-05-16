@@ -21,7 +21,7 @@ const listPeriodParams = 'status price'
 exports.init = (callback) => {
 	async.waterfall([
 		(callback) => callback(null, true),
-	], (err, result) => { //返回结果
+	], (err, result) => {
 		callback(err, result)
 	})
 }
@@ -49,7 +49,6 @@ exports.getProductCount = (callback) =>{
 exports.getProductList = (page, callback) => {
 	async.waterfall([
 		(callback) => { //
-			console.warn('get product list', page)
 			let maxQueryNum = limits.PRODUCT_QUERY_MAX_NUM
  			Product
  				.find()
@@ -73,16 +72,16 @@ exports.getProductList = (page, callback) => {
 				})
 		},
 	    convertProductImageIds,
-	], (err, result) => { //返回结果
+	], (err, result) => {
 		callback(err, result)
 	})
 }
 
 
-
+//通过gid列表获取商品列表
 exports.getProductListByGidList = (gids, callback) => {
 	async.waterfall([
-		(callback) => { //
+		(callback) => { 
 			Product
 				.find({'gid': {'$in' : gids}})
 				.select(listAllSelectParams)
@@ -108,18 +107,7 @@ exports.getProductListByGidList = (gids, callback) => {
 	})
 }
 
-    //     pid             | int           商品唯一id
-    //     gid             | int           商品的id（不唯一， 可重复使用）
-    //     title           | string        商品描述
-    //     img_url         | string        商品图片
-    //     price           | int           价格
-    //     buy_count       | int           当前购买数量
-    //     total_count     | int           商品总量
-    //     period          | int           该商品的期数
-    //     limited_buy     | int           限制购买数量
-
-
-
+//通过gid获取商品信息
 exports.getProductByGid = (gid, callback) =>{
 	async.waterfall([
 		(callback) => { //
@@ -155,10 +143,11 @@ exports.getProductByGid = (gid, callback) =>{
 	})
 }
 
+//编辑商品
 exports.editProduct = (productInfo, callback) =>{
 
 	async.waterfall([
-		(callback) => { //检查是否有初始化参数
+		(callback) => { //获取图片id
 			let images = productInfo.images
 			if (images) {
 				imageAction.getImageIds(images, callback)
@@ -167,7 +156,7 @@ exports.editProduct = (productInfo, callback) =>{
 			}
  			
 		},
-	    (imageIds, callback) => { //初始化
+	    (imageIds, callback) => { //更新商品信息
 	    	let set = {
 				name : productInfo.name, 
 				price : productInfo.price, 
@@ -194,6 +183,7 @@ exports.editProduct = (productInfo, callback) =>{
 	})
 }
 
+//设置商品状态
 exports.setProductStatus = (gid, status, isForce, callback) =>{
 	let isStatusExist = tools.hasValueInObject(productStatus, status)
 	if (!isStatusExist) {
@@ -221,10 +211,8 @@ exports.setProductStatus = (gid, status, isForce, callback) =>{
 	)
 }
 
+//添加商品
 exports.addProduct = (productInfo, callback) => {
-	//1.1、获取gid
-	//1.2、获取图片id
-	//2、写入数据库
 	if (!util.isObject(productInfo)) {
 		callback('product info not object')
 		return
@@ -254,15 +242,14 @@ exports.addProduct = (productInfo, callback) => {
 		    	callback(err, gid)
 		    })
 	    }],
-	}, (err, result) => { //返回结果
+	}, (err, result) => {
 		let gid = result.writeDataBase
 		callback(err, gid)
 	})
 
 }
 
-
-
+//将商品的imageid转换成image图片
 let convertProductImageIds = (productList, callback) => {
 	let imageSet = new Set()
 
@@ -284,7 +271,6 @@ let convertProductImageIds = (productList, callback) => {
     			productInfo.images = images
     		}
     	)
-
     	callback(null, productList)
 	})	
 }
