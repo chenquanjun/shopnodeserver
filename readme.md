@@ -13,7 +13,7 @@ npm start
 或者 pm2 start startserver.json
 
 启动数据库
-mongod ―-config /usr/local/etc/mongod.conf
+mongod --config /usr/local/etc/mongod.conf
 
 html后台:
 添加商品 http://localhost:8000/product/add
