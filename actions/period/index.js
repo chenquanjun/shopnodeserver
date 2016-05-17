@@ -24,10 +24,17 @@ const periodStatusParams = 'pid gid status limitDate'
 const periodBuyParams = 'gid status needNum buyNum remainIds limitDate'
 
 const listQueryStateParams = {
+	[0] : 'gid pid needNum buyNum status luckyId luckyUserId startDate limitDate finalDate',
 	[periodStatus.Buy] : 'pid gid buyNum needNum', //可购买 
 	[periodStatus.Figure] : 'pid gid buyNum needNum finalDate', //即将揭晓
 	[periodStatus.Finish] : 'pid gid buyNum needNum', //已结束
 	[periodStatus.Failed] : 'pid gid buyNum needNum',
+}
+
+const listQueryStateParamsDic = {
+	/*
+		初始化的时候将listQueryStateParams的value转成数组
+	*/
 }
 
 const periodStateParams = 'gid pid status needNum buyNum luckyId luckyUserId finalDate'
@@ -48,6 +55,13 @@ let statusTimerDic = {
 
 //初始化
 exports.init = (callback) => {
+
+	for (var key in listQueryStateParams){
+		var value = listQueryStateParams[key]
+		var dic = value.split(' ')
+		listQueryStateParamsDic[key] = dic
+	}
+
 	async.parallel([
 		callback => {
 			Period.find({status : periodStatus.Buy}, periodInitBuyParams , (err, list) => {		
@@ -100,6 +114,19 @@ exports.init = (callback) => {
 		console.log('period', finalResult.buyList.length, finalResult.figureList.length, finalResult.failedList.length)
 		setTimeout(figureInitList.bind(null, finalResult))
 		callback(err, null)
+	})
+}
+
+exports.getPeriodCount = (callback) =>{
+	Period.count((err, totalPeriodCount) =>{
+		if (err) {
+			callback(err)
+			return
+		}
+
+		let maxQueryNum = limits.PERIOD_QUERY_MAX_NUM
+		let totalPageNum = Math.floor(totalPeriodCount / maxQueryNum) + 1
+		callback(null, totalPeriodCount, totalPageNum)
 	})
 }
 
@@ -275,11 +302,13 @@ exports.getPeriodList = (currentPage, queryState, callback) =>{
 	}
 
 	let queryParams = listQueryStateParams[queryState]
+	let queryParamsDic = listQueryStateParamsDic[queryState]
 
 	if (!queryParams) {
 		callback('query state param error')
 		return
 	}
+
 
 	let maxQueryNum = limits.PERIOD_QUERY_MAX_NUM
 	Period
@@ -293,14 +322,13 @@ exports.getPeriodList = (currentPage, queryState, callback) =>{
 				return
 			}
 			let results = []
-			list.map(info => results.push({
-				gid : info.gid,
-				pid : info.pid,
-				buyNum : info.buyNum,
-				needNum : info.needNum,
-				finalDate : info.finalDate,
-				period : info.pid,
-			}))
+
+
+			list.map(info => {
+				let result = {}
+				queryParamsDic.map(key => result[key] = info[key])
+				results.push(result)
+			})
 			callback(err, results)
 		})
 }

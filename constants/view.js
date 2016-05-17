@@ -7,6 +7,9 @@ const params = {
 	//user
 	USER_SIGNUP : 'user/signup',
 	USER_SIGNIN : 'user/signin',
+
+	//period
+	PERIOD_LIST : 'period/list',
 }
 
 module.exports = params
