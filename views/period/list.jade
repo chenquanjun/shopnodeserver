@@ -32,8 +32,9 @@ block content
 					- var luckyId = periodInfo.luckyId
 					- var status = periodInfo.status
 					tr.product-panel(gid=gid)
-						th=gid
 						th=periodInfo.pid
+						th
+							a(href='/product/edit?gid=' + gid)=gid
 						th=periodInfo.buyNum + '/' + periodInfo.needNum
 						th
 							if (status == 1)
