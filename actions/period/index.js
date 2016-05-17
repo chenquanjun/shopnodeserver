@@ -19,8 +19,8 @@ const periodModel = require('../../models/period')
 const Period = periodModel.Period
 
 //config
-const listSelectParams = 'gid pid needNum buyNum status luckyId luckyUserId remainIds startDate limitDate finalDate'
-const listPeriodStatusParams = 'pid status limitDate'
+const allParams = 'gid pid needNum buyNum status luckyId luckyUserId remainIds startDate limitDate finalDate'
+const periodStatusParams = 'pid status limitDate'
 const periodBuyParams = 'gid status needNum buyNum remainIds limitDate'
 
 const listQueryStateParams = {
@@ -29,6 +29,8 @@ const listQueryStateParams = {
 	[periodStatus.Finish] : 'pid gid buyNum needNum', //已结束
 	[periodStatus.Failed] : 'pid gid buyNum needNum',
 }
+
+const periodStateParams = 'gid pid status needNum buyNum luckyId luckyUserId finalDate'
 
 //
 let statusTimerDic = {
@@ -122,8 +124,69 @@ exports.onBuy = (buyInfo, callback) =>{
 	})
 }
 
+exports.getPeriodInfo = (pid, callback) =>{
+	async.waterfall([
+		(callback) => { //获取期数信息
+			Period.findOne({pid : pid}, periodStateParams , callback)
+		},
+	    (result, callback) => { //判断是否足够购买
+	    	if (!result) {
+	    		callback('period info not exist')
+	    		return
+	    	}
+
+	    	let status = result.status
+
+	    	switch (status){
+				case periodStatus.Buy : 
+					callback(null, {
+						gid : result.gid,
+						pid : result.pid,
+						state : 0,
+						buyNum : result.buyNum,
+						needNum : result.needNum,
+					})
+					break
+				case periodStatus.Figure : 
+					callback(null, {
+						gid : result.gid,
+						pid : result.pid,
+						state : 1,
+						finalDate : result.finalDate
+					})
+					break
+				case periodStatus.Finish : 
+					callback(null, {
+						gid : result.gid,
+						pid : result.pid,
+						state : 2,
+						luckyUserId : result.luckyUserId,
+						luckyId : result.luckyId
+					})
+					break
+				case periodStatus.Failed : 
+					callback('period failed')
+					break
+				case periodStatus.UserStop : 
+					callback('period stopped')
+					break
+				default :
+					callback('period status not defined')
+	    	}
+
+	    },
+	], (err, result) => { //返回结果
+		callback(err, result)
+	})
+}
+
 //获取期数列表
 exports.getPeriodList = (currentPage, queryState, callback) =>{
+	if (currentPage < 0) {
+		callback('query page error')
+		return
+	}
+
 	let queryParams = listQueryStateParams[queryState]
 
 	if (!queryParams) {
@@ -167,7 +230,7 @@ let onPeriodStart = (gid, callback) =>{
 		(callback) => { //判断是否有旧的
 			Period
 				.find({gid : gid})
-				.select(listPeriodStatusParams)
+				.select(periodStatusParams)
 				.exec(callback)
 		},
 		(results, callback) => { 

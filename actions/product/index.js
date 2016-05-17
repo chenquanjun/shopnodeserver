@@ -127,13 +127,19 @@ exports.getProductByGid = (gid, callback) =>{
 				callback(err, productInfo, imageDic)
 			})
 	    },
-	    (productInfo, imageDic, callback) => { //
-			let imageIds = productInfo.imageIds
+	    (result, imageDic, callback) => { //
+			let productInfo = {
+				gid : result.gid,
+				name : result.name,
+				price : result.price,
+				status : result.status,	
+			}
+
+			let imageIds = result.imageIds
 
 			if (imageIds) {
 				let images = []
 				imageIds.map(imageId => images.push(imageDic[imageId]))
-				delete productInfo.imageIds
 				productInfo.images = images
 			}
 

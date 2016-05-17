@@ -81,7 +81,7 @@ let checkUserId = (userId, callback) => {
 				callback('user id not eixst')
 				return
 			}
-			callback(null, true)
+			callback(null, userId)
 		})
 }
 

@@ -18,11 +18,11 @@ router.get('/', (req, res, next) => {
 			if (isNeedCheckAuth) {
 				userAction.checkAuthInfo(req.session.user, callback)
 			}else{
-				callback(null)
+				callback(null, null)
 			}
 		},
-		(callback) => { 
-			apiAction.get(req.query, callback)
+		(userId, callback) => { 
+			apiAction.get(userId, req.query, callback)
 		},		
 	], (err, result) => { //返回结果
 		if (err) {
