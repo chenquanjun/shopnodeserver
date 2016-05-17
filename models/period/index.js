@@ -20,6 +20,6 @@ const Model = exports.Period = mongoose.model('period', periodSchema)
 
 //创建
 exports.create = (params) => {
-    const newParams = Object.assign({}, {date : new Date()}, params)
+    const newParams = Object.assign({}, params)
     return new Model(newParams); 
 }

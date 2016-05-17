@@ -20,7 +20,7 @@ const Period = periodModel.Period
 
 //config
 const allParams = 'gid pid needNum buyNum status luckyId luckyUserId remainIds startDate limitDate finalDate'
-const periodStatusParams = 'pid status limitDate'
+const periodStatusParams = 'pid gid status limitDate'
 const periodBuyParams = 'gid status needNum buyNum remainIds limitDate'
 
 const listQueryStateParams = {
@@ -32,24 +32,111 @@ const listQueryStateParams = {
 
 const periodStateParams = 'gid pid status needNum buyNum luckyId luckyUserId finalDate'
 
+const periodInitBuyParams = 'pid limitDate finalDate needNum buyNum'
+const periodInitFigureParams = 'pid'
+
 //
 let statusTimerDic = {
 /* struct
 	[pid] : {
 		status : xx,
 		job : xx,
+		gid : xx
  	}
  */
 }
 
 //初始化
 exports.init = (callback) => {
-	async.waterfall([
-		(callback) => callback(null, true),
+	async.parallel([
+		callback => {
+			Period.find({status : periodStatus.Buy}, periodInitBuyParams , (err, list) => {		
+				let dateNow = new Date()	
+				let buyList = []
+				let failedList = []
+				let figureList = []
+
+				list.map(info => {
+					let pid = info.pid
+					if (dateNow >= info.limitDate) {
+						//购买状态的超时
+						if (info.needNum == info.buyNum) {
+							//figure状态
+							figureList.push(pid)
+						}else{
+							//failed状态
+							failedList.push(pid)
+						}
+					}else{
+						//buy状态
+						buyList.push(pid)
+					}
+				})
+
+				callback(null, {
+					buyList : buyList,
+					failedList : failedList,
+					figureList : figureList
+				})
+			})
+		},
+		callback => {
+			Period.find({status : periodStatus.Figure}, periodInitFigureParams , (err, list) => {			
+				let figureList = []
+
+				list.map(info => {
+					let pid = info.pid
+					figureList.push(pid)
+				})
+
+				callback(null, {
+					figureList : figureList
+				})
+			})
+		},
 	], (err, result) => { //返回结果
-		callback(err, result)
+		let finalResult = result[0]
+		finalResult.figureList = [...finalResult.figureList, ...result[1].figureList] //处理合并
+		console.log('period', finalResult.buyList.length, finalResult.figureList.length, finalResult.failedList.length)
+		setTimeout(figureInitList.bind(null, finalResult))
+		callback(err, null)
 	})
 }
+
+//初始化处理数据库的期数
+let figureInitList = result =>{
+	async.series([
+		callback => { //buy
+			async.map(result.buyList, (pid, callback) =>{
+				Period
+					.findOne({pid : pid})
+					.select(periodStatusParams)
+					.exec((err, periodInfo) =>{
+						if (err) {
+							callback(err)
+							return
+						}
+						let result = onPeriodStatusTimerStart(periodInfo)
+						callback(null, result)
+					})
+				
+
+			}, (err,results) => { 
+				callback(err, results); 
+			})
+		},
+		callback => { //figure
+			//todo
+			callback(null)
+		},
+		callback => { //failed
+			//todo
+			callback(null)
+		},
+	], (err, result) => { //返回结果
+		
+	})
+} 
 
 //商品上架的状态切换
 exports.onProductStatusChange = (gid, status, isForce) => {

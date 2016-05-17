@@ -12,8 +12,8 @@ exports.init = () => {
 	async.waterfall([
 		(callback) => configAction.init(callback),
 		(value, callback) => imageAction.init(callback),
-		(value, callback) => periodAction.init(callback),
 		(value, callback) => productAction.init(callback),
+		(value, callback) => periodAction.init(callback),
 		(value, callback) => recordAction.init(callback),
 		(value, callback) => userAction.init(callback),
 	], (err, result) => { //返回结果
