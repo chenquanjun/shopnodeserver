@@ -107,11 +107,11 @@ router.get('/list', (req, res, next) => {
 		(callback) => { 
 			productAction.getProductCount(callback)
 		},
-		(totalProductNum, totalPageNum, callback) => { 
+		(totalNum, totalPageNum, callback) => { 
 
 			let result = {
 				totalPageNum : totalPageNum, 
-				totalProductNum : totalProductNum,
+				totalNum : totalNum,
 				page : page,
 				imagePath : paths.UPLOAD_IMAGE,
 			}

@@ -20,11 +20,11 @@ router.get('/list', (req, res, next) => {
 		(callback) => { 
 			periodAction.getPeriodCount(callback)
 		},
-		(totalPeriodNum, totalPageNum, callback) => { 
+		(totalNum, totalPageNum, callback) => { 
 
 			let result = {
 				totalPageNum : totalPageNum, 
-				totalPeriodNum : totalPeriodNum,
+				totalNum : totalNum,
 				page : page,
 			}
 

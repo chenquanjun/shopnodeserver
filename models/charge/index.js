@@ -10,9 +10,9 @@ const chargeSchema = new Schema({
     sourceInfo : String, //充值来源附带的相关信息（交易单号等等）
 })
 
-const Model = exports.Record = mongoose.model('charge', chargeSchema)
+const Model = exports.Charge = mongoose.model('charge', chargeSchema)
 
 exports.create = (params) => {
-    const newParams = Object.assign({}, params)
+    const newParams = Object.assign({chargeDate : new Date()}, params)
     return new Model(newParams); 
 }

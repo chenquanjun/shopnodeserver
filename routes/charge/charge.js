@@ -10,6 +10,7 @@ const paths = require('../../constants/path')
 const views = require('../../constants/view')
 
 const chargeAction = require('../../actions/charge')
+const userAction = require('../../actions/user')
 
 
 router.get('/main', (req, res, next) => {
@@ -19,11 +20,11 @@ router.get('/main', (req, res, next) => {
 
 router.post('/add', (req, res, next) => {
 	async.waterfall([
-		(isNeedCheckAuth, callback) => { //用户验证
+		(callback) => { //用户验证
 			userAction.checkAuthInfo(req.session.user, callback)
 		},
 		(userId, callback) => { 
-			chargeAction.add(userId, req.query, callback)
+			chargeAction.addBalance(userId, req.body, callback)
 		},		
 	], (err, result) => { //返回结果
 		if (err) {
@@ -35,8 +36,47 @@ router.post('/add', (req, res, next) => {
 })
 
 router.get('/list', (req, res, next) => {
-	let params = { title : '充值记录'}
-    res.render(views.CHARGE_LIST, params)
+	let page = parseInt(req.query.page) || 1
+
+	async.waterfall([
+		(callback) => { //用户验证
+			userAction.checkAuthInfo(req.session.user, callback)
+		},
+		(userId, callback) => { 
+			async.waterfall([
+				callback => chargeAction.getCountByUserId(userId, callback),
+				(totalNum, totalPageNum, callback) => { 
+
+					let result = {
+						totalPageNum : totalPageNum, 
+						totalNum : totalNum,
+						page : page,
+					}
+
+					let queryPage = page - 1
+
+					if (queryPage < 0 || queryPage > totalPageNum) {
+						callback(null, result)
+						return
+					}
+
+					chargeAction.getListByUserId(
+						userId, 
+						queryPage,
+						(err, chargeList) => {
+							result.chargeList = chargeList
+							callback(err, result)
+						}
+					)
+				},
+
+			], callback)
+		},
+	], (err, result) => { //返回结果
+		let params = Object.assign({ title : '充值记录'}, result)
+
+	    res.render(views.CHARGE_LIST, params)
+	})
 })
 
 

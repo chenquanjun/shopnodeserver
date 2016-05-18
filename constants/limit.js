@@ -4,6 +4,8 @@ const params = {
 
 	PERIOD_QUERY_MAX_NUM : 10,
 
+	CHARGE_QUERY_MAX_NUM : 10,
+
 	SALT_LENGTH : 32,
 	SESSION_EXPIRE_TIME : 2 * 60 * 60 * 10000,
 }

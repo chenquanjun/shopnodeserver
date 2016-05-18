@@ -11,7 +11,7 @@ const configSchema = new Schema({
     chargeId : Number, //chargeId
 }); 
 
-const Model = exports.Config = mongoose.model('config', configSchema);
+const Model = exports.Config = mongoose.model('config', configSchema)
 
 const initialParams = {
     gid : 1, 

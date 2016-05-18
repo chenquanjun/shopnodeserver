@@ -69,7 +69,7 @@ exports.getSalt = () => {
 	return utils.randomString();
 }
 
-exports.getTimestamp = () =>{
+exports.getTimeStamp = () =>{
 	return utils.timestamp();
 }
 

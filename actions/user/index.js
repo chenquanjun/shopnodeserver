@@ -24,6 +24,13 @@ exports.init = (callback) => {
 		callback(err, result)
 	})
 }
+ 
+exports.addBalance = (userId, balance, callback) => {
+	User.update({userId: userId}, {$inc: {balance: balance}}, (err, result) =>{
+		console.warn(err, result)
+		callback(err, result)
+	})
+}
 
 exports.checkAuthInfo = (user, callback) => {
 	async.waterfall([

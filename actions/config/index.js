@@ -98,3 +98,7 @@ exports.genUserId = (genNum, callback) =>{
 	genId('userId', genNum, callback)
 }
 
+exports.genChargeId = (genNum, callback) =>{
+	genId('chargeId', genNum, callback)
+}
+
