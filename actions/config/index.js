@@ -1,5 +1,6 @@
 "use strict";
 const async = require('async')
+const util = require('util')
 
 const configModel = require('../../models/config')
 const Config = configModel.Config
@@ -8,20 +9,41 @@ const Config = configModel.Config
 exports.init = (callback) => {
 	async.waterfall([
 		(callback) => { //检查是否有初始化参数
-			Config.find((err, docs) => { 
-				callback(err, docs.length == 0)
-		    });
+			Config.findOne(callback)
 		},
-	    (isNeedInit, callback) => { //初始化
-	    	if (isNeedInit) {
+	    (result, callback) => { //初始化
+	    	if (util.isNullOrUndefined(result)) {
 	    		console.warn('init database config')
 				let model = configModel.create()
-			    model.save(); 
+			    model.save()
+			    callback(null, true)
 	    	}else{
+	    		//比较字段
 	    		console.warn('database already init')
+	    		let initParams = configModel.getInitParams()
+	    		let isDirty = false
+	    		let updateDic = {}
+
+	    		for (let key in initParams){
+	    			let value = initParams[key]
+	    			if (util.isNullOrUndefined(result[key])) {
+	    				isDirty = true
+	    				updateDic[key] = value
+	    			}
+	    		}
+
+	    		if (isDirty) {
+	    			Config.update({_id : result._id}, {$set : updateDic}, (err, result) => {
+	    				console.warn('database update', updateDic)
+	    				callback(err, result)
+	    			})
+	    		}else{
+	    			console.warn('datebase normal')
+	    			callback(null, true)
+	    		}
 	    	}
 
-		    callback(null, true)
+	    	
 	    },
 	], (err, result) => { //返回结果
 		if (err) {
