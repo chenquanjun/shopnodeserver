@@ -1,0 +1,67 @@
+extends ../layout
+
+mixin createHrefBtn(name, href, isDisabled)
+	if isDisabled
+		a.btn.btn-default.href-btn(role="button", disabled)
+			=name
+	else
+		a.btn.btn-default.href-btn(href=href role="button")
+			=name
+	
+block css
+	link(rel='stylesheet', href='/stylesheets/product-list.css')
+
+block content
+	table.table.table-striped.table-bordered
+		thred
+			tr
+				th 充值id
+				th 充值数目
+				th 充值日期
+				th 充值来源
+				th 充值信息
+		tbody
+			- var listNum = 0
+			- if (chargeList)
+				each chargeInfo in chargeList
+					- listNum += 1
+					- var chargeId = chargeInfo.chargeId
+					- var source = chargeInfo.source
+					tr.product-panel(chargeId=chargeId)
+						th=chargeId
+						th=chargeInfo.chargeNum 
+						th=chargeInfo.chargeDate
+						th
+							if (source == 0)
+								label="网页"
+							else
+								label="未知"
+						th=chargeInfo.sourceInfo
+
+			- for (var i = 0; i < 10 - listNum; i++)
+				tr
+					th
+					th
+					th
+					th
+					th
+
+	.form-horizontal
+		.form-group
+		#page
+			label.col-sm-2.control-label='当前页数' 
+			p.col-sm-2.form-control-static= page + '/' + totalPageNum
+			label.col-sm-2.control-label='当前充值总数'
+			p.col-sm-2.form-control-static= totalNum
+			-var lastPage = "list?page=" + (parseInt(page) - 1)
+			-var nextPage = "list?page=" + (parseInt(page) + 1)
+			if (page <= 1)
+				-var isLastDisabled = true
+			if (page >= totalPageNum)
+				-var isNextDisabled = true
+			+createHrefBtn('上一页', lastPage, isLastDisabled)
+			+createHrefBtn('下一页', nextPage, isNextDisabled)
+
+block scripts
+	script.
+	

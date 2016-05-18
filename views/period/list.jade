@@ -52,8 +52,6 @@ block content
 						th=luckyId ? luckyId + '/' + periodInfo.luckyUserId : '-'
 						th=periodInfo.startDate + '/' +  (periodInfo.finalDate ? periodInfo.finalDate : '-')
 						th=periodInfo.limitDate
-			- else
-				= listNum = 10
 			- for (var i = 0; i < 10 - listNum; i++)
 				tr
 					th
@@ -70,7 +68,7 @@ block content
 			label.col-sm-2.control-label='当前页数' 
 			p.col-sm-2.form-control-static= page + '/' + totalPageNum
 			label.col-sm-2.control-label='当前商品期数总数'
-			p.col-sm-2.form-control-static= totalProductNum
+			p.col-sm-2.form-control-static= totalNum
 			-var lastPage = "list?page=" + (parseInt(page) - 1)
 			-var nextPage = "list?page=" + (parseInt(page) + 1)
 			if (page <= 1)

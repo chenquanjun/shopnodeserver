@@ -24,7 +24,7 @@ block scripts
 
 			onCharge = function(){
 				var params = {
-					charge : $('input[textType]').val()
+					chargeNum : $('input[textType]').val()
 				}
 
 				$.post('add', params, function(data, status){
