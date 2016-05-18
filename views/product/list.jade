@@ -81,7 +81,7 @@ block content
 		#page
 			label.col-sm-2.control-label='当前页数' 
 			p.col-sm-2.form-control-static= page + '/' + totalPageNum
-			label.col-sm-2.control-label='当前产品总数'
+			label.col-sm-2.control-label='当前商品总数'
 			p.col-sm-2.form-control-static= totalProductNum
 			-var lastPage = "list?page=" + (parseInt(page) - 1)
 			-var nextPage = "list?page=" + (parseInt(page) + 1)
@@ -91,6 +91,7 @@ block content
 				-var isNextDisabled = true
 			+createHrefBtn('上一页', lastPage, isLastDisabled)
 			+createHrefBtn('下一页', nextPage, isNextDisabled)
+			+createHrefBtn('添加商品', "add")
 
 block scripts
 	script.

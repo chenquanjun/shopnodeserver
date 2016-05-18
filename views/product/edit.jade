@@ -28,9 +28,14 @@ block content
 			)
 			#errorBlock.help-block
 
-	button.btn.btn-default.product-add-btn(onclick='onEditProduct()')
+	button.btn.btn-success.product-add-btn(onclick='onEditProduct()')
 		span.glyphicon.glyphicon-plus(aria-hidden='true') 
 		| 修改
+
+	a.btn.btn-info.href-btn(href='list' role="button")
+		| 商品列表
+	a.btn.btn-danger.href-btn(href='add' role="button")
+		| 添加商品
 
 block scripts
 
