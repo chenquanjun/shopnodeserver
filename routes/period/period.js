@@ -14,6 +14,7 @@ const periodAction = require('../../actions/period')
 
 router.get('/list', (req, res, next) => {
 	let page = parseInt(req.query.page) || 1
+	let queryState = 0
 
 	async.waterfall([
 		(callback) => { 
@@ -34,13 +35,10 @@ router.get('/list', (req, res, next) => {
 				return
 			}
 
-			let queryState = 0
-
 			periodAction.getPeriodList(
 				queryPage, 
 				queryState,
 				(err, periodList) => {
-					console.warn(periodList)
 					result.periodList = periodList
 					callback(err, result)
 				}

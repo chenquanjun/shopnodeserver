@@ -437,12 +437,11 @@ let onPeriodStatusTimerEnd_ = (pid) =>{
 	}
 
 	let status = periodInfo.status
-	let gid = periodInfo.gid
 	delete statusTimerDic[pid]
 
 	switch(status){
 		case periodStatus.Buy : //可购买 -> 失败（购买人数不足超时）
-			onBuyFailed(pid, gid)
+			onBuyStatusTimerEnd(pid)
 			break
 		case periodStatus.Figure : //即将揭晓
 			onFigureToFinishStatus(pid)
@@ -466,7 +465,7 @@ let onPeriodStatusTimerStart = (periodInfo) =>{
 }
 
 
-let onBuyFailed = (pid, gid) =>{
+let onBuyStatusTimerEnd = (pid, gid) =>{
 	//更新数据库状态
 	//资金返还
 

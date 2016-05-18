@@ -69,22 +69,6 @@ exports.getAuthInfo = (userId) => {
 	}
 }
 
-let checkUserId = (userId, callback) => {
-	User
-		.findOne({userId : userId})
-		.exec((err, result) => {
-			if (err) {
-				callback(err)
-				return
-			}
-			if (!result) {
-				callback('user id not eixst')
-				return
-			}
-			callback(null, userId)
-		})
-}
-
 exports.onSignin = (userName, password, callback) =>{
 	async.waterfall([
 		(callback) => { 
@@ -207,3 +191,21 @@ exports.addUser = (userInfo, callback) =>{
 		callback(err, result)
 	})
 }
+
+
+let checkUserId = (userId, callback) => {
+	User
+		.findOne({userId : userId})
+		.exec((err, result) => {
+			if (err) {
+				callback(err)
+				return
+			}
+			if (!result) {
+				callback('user id not eixst')
+				return
+			}
+			callback(null, userId)
+		})
+}
+

@@ -10,6 +10,10 @@ const params = {
 
 	//period
 	PERIOD_LIST : 'period/list',
+
+	//charge
+	CHARGE_MAIN : 'charge/main',
+	CHARGE_LIST : 'charge/list',
 }
 
 module.exports = params
