@@ -1,0 +1,46 @@
+extends ../layout
+
+block css
+	link(rel='stylesheet', href='/stylesheets/product-add.css')
+
+block content
+	.form-group
+		label='充值金额'
+		input.form-control(
+			type='tel'
+			name='charge'
+			placeholder='充值金额'
+			textType
+		)
+
+	button.btn.btn-success.product-add-btn(onclick='onCharge()')
+		span.glyphicon.glyphicon-plus(aria-hidden='true') 
+		| 充值
+
+block scripts
+
+	script.
+		$(function(){
+
+			onCharge = function(){
+				var params = {
+					charge : $('input[textType]').val()
+				}
+
+				$.post('add', params, function(data, status){
+					if (status !== 'success'){
+						alert("充值失败")
+						return
+					}
+
+					var result = data.result
+
+					if (result != 0){
+						alert("充值失败，错误:" + data.err)
+						return
+					}
+					alert("充值成功!")					
+				})
+			};
+
+		});
