@@ -6,13 +6,13 @@ const recordSchema = new Schema({
     userId: Number, //用户id
     pid : Number, //购买期数id 
     buyDate : { type: Date }, //购买日期
-    buyCount : Number, //购买数量
+    buyNum : Number, //购买数量
     buyIds : [Number], //购买id
 })
 
 const Model = exports.Record = mongoose.model('record', recordSchema)
 
 exports.create = (params) => {
-    const newParams = Object.assign({}, params)
+    const newParams = Object.assign({buyDate : new Date()}, params)
     return new Model(newParams); 
 }

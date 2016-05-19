@@ -8,6 +8,8 @@ const schedule = require('node-schedule')
 const tools = require('../../tools')
 //actions
 const productAction = require('../product')
+const recordAction = require('../record')
+const userAction = require('../user')
 const configAction = require('../config')
 //constans
 const limits = require('../../constants/limit')
@@ -173,8 +175,9 @@ exports.onProductStatusChange = (gid, status, isForce) => {
 				console.warn('period start error', err)
 			}
 		})
-	} else if (isForce && status == productStatus.Invalid) {
-		onPeriodStop(gid, (err, result) => {
+	} else{
+	//强制停止期数se if (isForce && status == productStatus.Invalid) {
+		onPeriodForceStop(gid, (err, result) => {
 			if (err) {
 				console.warn('period stop error', err)
 			}
@@ -183,10 +186,21 @@ exports.onProductStatusChange = (gid, status, isForce) => {
 }
 
 //购买商品
-exports.onBuy = (buyInfo, callback) =>{
-	let userId = buyInfo.userId
-	let buyNum = buyInfo.buyNum
-	let pid = buyInfo.pid
+exports.onBuy = (userId, buyInfo, callback) => {
+	let buyNum = parseInt(buyInfo.buyNum) || 0
+
+	if (buyNum <= 0) {
+		callback('buy num error')
+		return
+	}
+
+	let pid = parseInt(buyInfo.pid) || 0
+
+	if (pid <= 0) {
+		callback('pid error')
+		return
+	}
+
 	async.waterfall([
 		(callback) => { //获取期数信息
 			Period.findOne({pid : pid}, periodBuyParams , callback)
@@ -205,7 +219,7 @@ exports.onBuy = (buyInfo, callback) =>{
 
 	    	let remainIds = result.remainIds
 	    	let remainNum = result.needNum - result.buyNum
-	    	if (remainIds != remainNum) {
+	    	if (remainIds.length != remainNum) {
 	    		callback('period id num not match')
 	    		return
 	    	}
@@ -225,13 +239,51 @@ exports.onBuy = (buyInfo, callback) =>{
 	    	let buyIds = remainIds.splice(-buyNum, buyNum)
 
 	    	//添加购买记录
+    		let recordInfo = {
+    			userId : userId,
+    			pid : pid,
+    			buyNum : buyNum,
+    			buyIds : buyIds,
+    		}
 
-	    	//扣除资金
+  
+    		let periodInfo = {
+    			buyNum : result.buyNum + buyNum,
+    		}
 
-	    	//判断是否结束
+    		if (remainIds.length == 0) { //所有购买结束
+		    	let limitMs =  limits.PERIOD_FIGURE_TIME
+		    	let curDate = new Date()
+		    	let curTime = curDate.getTime()
+		    	let limitTime = curTime + limitMs
+		    	let limitDate = new Date(limitTime)
 
-	    	//todo
+	    		let periodTimerInfo = {
+	    			pid : pid,
+	    			gid : result.gid,
+	    			limitDate : limitDate
+	    		}
 
+    			periodInfo.finalDate = curDate //添加最后购买日期
+    			periodInfo.remainIds = null //id清空
+    			periodInfo.status = periodStatus.Figure //进入计算状态
+
+    			onPeriodStatusTimerStart(periodTimerInfo) //进入下一个时间状态
+    		}else{
+    			periodInfo.remainIds = remainIds //保存新的id
+    		}
+
+    		async.parallel([
+	    		callback => { //写入购买纪录
+	    			recordAction.addRecord(recordInfo, callback)
+	    		},
+	    		callback => { //扣除资金
+	    			userAction.onBuyPeriod(userId, buyNum, callback)
+	    		},
+	    		callback =>{ //更新期数信息
+	    			Period.update({pid : pid}, {$set : periodInfo} , callback)
+	    		}
+    		], callback)
 	    },
 	], (err, result) => { //返回结果
 		callback(err, result)
@@ -441,7 +493,7 @@ let onPeriodStatusTimerEnd_ = (pid) =>{
 
 	switch(status){
 		case periodStatus.Buy : //可购买 -> 失败（购买人数不足超时）
-			onBuyStatusTimerEnd(pid)
+			onBuyStatusToFailedStatus(pid)
 			break
 		case periodStatus.Figure : //即将揭晓
 			onFigureToFinishStatus(pid)
@@ -456,6 +508,14 @@ let onPeriodStatusTimerStart = (periodInfo) =>{
 	let gid = periodInfo.gid
 	let date = periodInfo.limitDate
 	let status = periodInfo.status
+
+	let oldJobInfo = statusTimerDic[pid]
+	if (!util.isNullOrUndefined(oldJobInfo)) {
+		console.log('Period status change with stop old job', pig)
+		let oldJob = oldJobInfo.job 
+		oldJob.cancel()
+	}
+
 	let job = schedule
 			.scheduleJob(date, onPeriodStatusTimerEnd_.bind(null, pid))
 			
@@ -465,7 +525,7 @@ let onPeriodStatusTimerStart = (periodInfo) =>{
 }
 
 
-let onBuyStatusTimerEnd = (pid, gid) =>{
+let onBuyStatusToFailedStatus = (pid, gid) =>{
 	//更新数据库状态
 	//资金返还
 
@@ -474,6 +534,7 @@ let onBuyStatusTimerEnd = (pid, gid) =>{
 let onFigureToFinishStatus = (pid) =>{
 
 }
+
 
 let onPeroidStatusTimerCancel = (gid) =>{
 	console.warn('before', statusTimerDic)
@@ -496,7 +557,8 @@ let onPeroidStatusTimerCancel = (gid) =>{
 	console.warn('end', statusTimerDic)
 }
 
-let onPeriodStop = (gid, callback) =>{
+//强制停止期数
+let onPeriodForceStop = (gid, callback) =>{
 	//停止所有计时器
 	onPeroidStatusTimerCancel(gid)
 

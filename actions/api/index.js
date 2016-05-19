@@ -41,6 +41,9 @@ exports.get = (userId, query, callback) =>{
 			let pid = query.pid
 			apiGetGoodsInfo(userId, pid, callback)
 			break
+		case 'buy_goods' : 
+			apiBuyGoods(userId, query, callback)
+			break
 		default :
 			callback('api not exist!!')
 	}
@@ -49,6 +52,14 @@ exports.get = (userId, query, callback) =>{
 exports.post = (body, callback) =>{
 	callback('not over write')
 }
+
+let apiBuyGoods = (userId, query, callback) => {
+	let buyInfo = {
+		buyNum : query.count,
+		pid : query.pid,
+	}
+	periodAction.onBuy(userId, buyInfo, callback)
+} 
 
 //api 获取商品期数列表
 let apiGetGoods = (currentPage, queryState, callback) => {

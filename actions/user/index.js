@@ -26,8 +26,23 @@ exports.init = (callback) => {
 }
  
 exports.addBalance = (userId, balance, callback) => {
+	if (balance <= 0) {
+		callback('add balance value error')
+		return
+	}
+
 	User.update({userId: userId}, {$inc: {balance: balance}}, (err, result) =>{
-		console.warn(err, result)
+		callback(err, result)
+	})
+}
+
+exports.onBuyPeriod = (userId, cost, callback) =>{
+	if (cost <= 0) {
+		callback('buy cost value error')
+		return
+	}
+
+	User.update({userId: userId}, {$inc: {balance: -cost}}, (err, result) =>{
 		callback(err, result)
 	})
 }
