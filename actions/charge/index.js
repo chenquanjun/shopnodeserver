@@ -2,7 +2,6 @@
 //lib
 const async = require('async')
 const util = require('util')
-const schedule = require('node-schedule')
 
 //tools
 const tools = require('../../tools')

@@ -1,0 +1,60 @@
+extends ../layout
+
+mixin createHrefBtn(name, href, isDisabled)
+	if isDisabled
+		a.btn.btn-default.href-btn(role="button", disabled)
+			=name
+	else
+		a.btn.btn-default.href-btn(href=href role="button")
+			=name
+	
+block css
+	link(rel='stylesheet', href='/stylesheets/product-list.css')
+
+block content
+	table.table.table-striped.table-bordered
+		thred
+			tr
+				th recordId
+				th pid
+				th 购买日期
+				th 购买数量
+				th 购买id
+		tbody
+			- var listNum = 0
+			- if (recordList)
+				each recordInfo in recordList
+					- listNum += 1
+					- var recordId = recordInfo.recordId
+					tr.product-panel(recordId=recordId)
+						th=recordInfo.recordId
+						th=recordInfo.pid
+						th=recordInfo.buyDate
+						th=recordInfo.buyNum
+						th='点击查看'
+			- for (var i = 0; i < 10 - listNum; i++)
+				tr
+					th
+					th
+					th
+					th
+					th
+
+	.form-horizontal
+		.form-group
+		#page
+			label.col-sm-2.control-label='当前页数' 
+			p.col-sm-2.form-control-static= page + '/' + totalPageNum
+			label.col-sm-2.control-label='当前商品期数总数'
+			p.col-sm-2.form-control-static= totalNum
+			-var lastPage = "list?page=" + (parseInt(page) - 1)
+			-var nextPage = "list?page=" + (parseInt(page) + 1)
+			if (page <= 1)
+				-var isLastDisabled = true
+			if (page >= totalPageNum)
+				-var isNextDisabled = true
+			+createHrefBtn('上一页', lastPage, isLastDisabled)
+			+createHrefBtn('下一页', nextPage, isNextDisabled)
+
+block scripts
+	script.

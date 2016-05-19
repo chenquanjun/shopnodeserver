@@ -14,6 +14,9 @@ const params = {
 	//charge
 	CHARGE_MAIN : 'charge/main',
 	CHARGE_LIST : 'charge/list',
+
+	//record
+	RECORD_LIST : 'record/list',
 }
 
 module.exports = params
