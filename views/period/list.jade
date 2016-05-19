@@ -35,7 +35,7 @@ block content
 						th=periodInfo.pid
 						th
 							a(href='/product/edit?gid=' + gid)=gid
-						th=periodInfo.buyNum + '/' + periodInfo.needNum
+						th=(periodInfo.buyNum ? periodInfo.buyNum : '-') + '/' + periodInfo.needNum
 						th
 							if (status == 1)
 								label="可购买"

@@ -115,7 +115,6 @@ exports.init = (callback) => {
 	], (err, result) => { //返回结果
 		let finalResult = result[0]
 		finalResult.figureList = [...finalResult.figureList, ...result[1].figureList] //处理合并
-		console.log('period', finalResult.buyList.length, finalResult.figureList.length, finalResult.failedList.length)
 		setTimeout(figureInitList.bind(null, finalResult))
 		callback(err, null)
 	})
@@ -155,16 +154,40 @@ let figureInitList = result =>{
 			}, callback)
 		},
 		callback => { //figure
+			if (result.figureList.length == 0) {
+				callback(null, null)
+				return
+			}
+
 			async.forEachLimit(result.figureList, 1, (pid, callback) => { 
  				onFigureToFinishStatus(pid)
 			}, callback)
 		},
 		callback => { //failed
 			//todo
-			callback(null)
+			callback(null, null)
 		},
 	], (err, result) => { //返回结果
-		console.warn('figure finish', err, result)
+		if (err) {
+			console.warn('Warning: Period init figure error', err)
+			return
+		}
+
+		let buyResult = result[0]
+		let figureResult = result[1]
+		let failedResult = result[2]
+
+		if (util.isArray(buyResult) && buyResult.length > 0) {
+			console.log('Period: on buy num', buyResult.length)
+		}
+
+		if (util.isArray(figureResult) && figureResult.length > 0) {
+			console.log('Period: on figure num', figureResult.length)
+		}
+
+		if (util.isArray(failedResult) && failedResult.length > 0) {
+			console.log('Period: on failed num', failedResult.length)
+		}
 	})
 } 
 

@@ -11,14 +11,13 @@ exports.init = (callback) => {
 		(callback) => { //检查是否有初始化参数
 			Config.findOne(callback)
 		},
-	    (result, callback) => { //初始化
-	    	if (util.isNullOrUndefined(result)) {
+	    (result, callback) => { 
+	    	if (util.isNullOrUndefined(result)) { //数据库清空后初始化配置
 	    		console.warn('init database config')
 				let model = configModel.create()
 			    model.save()
 			    callback(null, true)
 	    	}else{
-	    		//比较字段
 	    		console.warn('database already init')
 	    		let initParams = configModel.getInitParams()
 	    		let isDirty = false
@@ -32,13 +31,12 @@ exports.init = (callback) => {
 	    			}
 	    		}
 
-	    		if (isDirty) {
+	    		if (isDirty) { //增加新的配置字段
 	    			Config.update({_id : result._id}, {$set : updateDic}, (err, result) => {
 	    				console.warn('database update', updateDic)
 	    				callback(err, result)
 	    			})
-	    		}else{
-	    			console.warn('datebase normal')
+	    		}else{ //正常启动
 	    			callback(null, true)
 	    		}
 	    	}
@@ -53,21 +51,21 @@ exports.init = (callback) => {
 	})
 }
 
+//通用生成新id方法
 let genId = (name, genNum, callback) =>{
 	async.waterfall([
-		(callback) => { //检查是否有初始化参数
+		(callback) => {
 			Config.findOne({}, name , (err, doc) => { 
 				callback(err, doc)
 		    })
 		},
-	    (doc, callback) => { //初始化
+	    (doc, callback) => { 
 	    	let result = []
 			let oldId = doc[name]
 	    	for (let i = 0; i < genNum; i++){
 	    		result.push(oldId + i)
 	    	}
 	    	let newId = oldId + genNum
-	    	// console.warn('gen:', name, genNum, oldId, newId)
 
 	    	Config.update({_id: doc._id}, {[name] : newId}, function (err) {
 	    		callback(err, result)
@@ -78,26 +76,32 @@ let genId = (name, genNum, callback) =>{
 	})
 }
 
+//生成商品gid
 exports.genGId = (genNum, callback) =>{
 	genId('gid', genNum, callback)
 }
 
+//生成图片id
 exports.genImageId = (genNum, callback) =>{
 	genId('imageId', genNum, callback)
 }
 
+//生成期数id
 exports.genPId = (genNum, callback) =>{
 	genId('pid', genNum, callback)
 }
 
+//生成记录id
 exports.genRecordId = (genNum, callback) =>{
 	genId('recordId', genNum, callback)
 }
 
+//生成用户id
 exports.genUserId = (genNum, callback) =>{
 	genId('userId', genNum, callback)
 }
 
+//生成充值id
 exports.genChargeId = (genNum, callback) =>{
 	genId('chargeId', genNum, callback)
 }
