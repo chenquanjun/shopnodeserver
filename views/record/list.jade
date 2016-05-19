@@ -31,7 +31,11 @@ block content
 						th=recordInfo.pid
 						th=recordInfo.buyDate
 						th=recordInfo.buyNum
-						th='点击查看'
+						th
+							-buyIdStr = ''
+							each buyId in recordInfo.buyIds
+								- buyIdStr = buyIdStr + buyId + ' '
+							span=buyIdStr
 			- for (var i = 0; i < 10 - listNum; i++)
 				tr
 					th

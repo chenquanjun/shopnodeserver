@@ -283,7 +283,9 @@ exports.onBuy = (userId, buyInfo, callback) => {
 	    		callback =>{ //更新期数信息
 	    			Period.update({pid : pid}, {$set : periodInfo} , callback)
 	    		}
-    		], callback)
+    		], (err, result) =>{
+    			callback(err, {lottery_ids : buyIds})
+    		})
 	    },
 	], (err, result) => { //返回结果
 		callback(err, result)
@@ -511,7 +513,7 @@ let onPeriodStatusTimerStart = (periodInfo) =>{
 
 	let oldJobInfo = statusTimerDic[pid]
 	if (!util.isNullOrUndefined(oldJobInfo)) {
-		console.log('Period status change with stop old job', pig)
+		console.log('Period status change with stop old job', pid)
 		let oldJob = oldJobInfo.job 
 		oldJob.cancel()
 	}
