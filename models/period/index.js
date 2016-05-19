@@ -11,8 +11,10 @@ const periodSchema = new Schema({
     luckyUserId : Number, //中奖用户
     remainIds : [Number], //剩余id
     startDate : { type: Date }, //期数开始时间
-    limitDate : { type: Date}, //截至购买时间
+    limitDate : { type: Date }, //截至购买时间
     finalDate : { type: Date }, //最后购买时间
+    recordList : [Number], //记录id
+    totalFigureNum : Number, //计算结果
 
 })
 

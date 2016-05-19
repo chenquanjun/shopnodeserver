@@ -16,6 +16,8 @@ const configAction = require('../config')
 const userQueryParams = 'recordId pid buyNum buyDate buyIds'
 const allQueryParams = 'userId recordId pid buyNum buyDate buyIds'
 
+const lastQueryParams = 'userId recordId buyDate'
+const luckyIdParams = 'userId buyIds'
 
 //初始化
 exports.init = (callback) => {
@@ -24,6 +26,60 @@ exports.init = (callback) => {
 	], (err, result) => { //返回结果
 		callback(err, result)
 	})
+}
+
+exports.getUserByLuckyId = (pid, luckyId, callback) => {
+	Record
+		.find({pid : pid})
+		.select(luckyIdParams)
+		.exec((err, list) =>{
+			if (err) {
+				callback(err)
+				return
+			}
+			let luckyUserId = null
+
+			for (let i in list){
+				let info = list[i]
+				let buyIds = info.buyIds
+
+				for (let j in buyIds){
+					let buyId = buyIds[j]
+					luckyUserId = info.userId
+					console.warn('find lucky user', pid, luckyId, luckyUserId)
+					break //break buyIds map loop
+				}
+
+				if (luckyUserId) { 
+					break //break list map loop
+				}
+			}
+
+			callback(null, luckyUserId)
+		})
+}
+
+exports.getLastRecordList = (date, callback) => {
+	let maxQueryNum = limits.RECORD_FIGURE_QUERY_MAX_NUM
+	let paramsDic = lastQueryParams.split(' ')
+	Record
+		.find({buyDate: {"$lte": date}})//不大于当前日期的
+		.select(lastQueryParams)
+		.limit(maxQueryNum)
+		.sort({buyDate:-1})
+		.exec((err, list) =>{
+			if (err) {
+				callback(err)
+				return
+			}
+			let results = []
+			list.map(info => {
+				let result = {}
+				paramsDic.map(key => result[key] = info[key])
+				results.push(result)
+			})
+			callback(null, results)
+		})
 }
 
 

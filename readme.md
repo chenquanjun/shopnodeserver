@@ -49,6 +49,15 @@
 + action: get\_goods 
 + params: current\_page:页数 query_state:状态
 
+##优化
+db.test.image.ensureIndex({imageId : 1}, {unique : true})
+db.test.product.ensureIndex({gid : 1}, {unique : true})
+db.test.charge.ensureIndex({chargeId : 1}, {unique : true})
+db.test.period.ensureIndex({pid : 1}, {unique : true})
+db.test.period.ensureIndex({finalDate : -1})
+db.test.record.ensureIndex({recordId : 1}, {unique : true})
+db.test.user.ensureIndex({userId : 1}, {unique : true})
+
 
 
 

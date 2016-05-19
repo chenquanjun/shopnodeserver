@@ -33,6 +33,8 @@ const listQueryStateParams = {
 	[periodStatus.Failed] : 'pid gid buyNum needNum',
 }
 
+const figureParams = 'status finalDate needNum'
+
 const listQueryStateParamsDic = {
 	/*
 		初始化的时候将listQueryStateParams的value转成数组
@@ -150,20 +152,19 @@ let figureInitList = result =>{
 					})
 				
 
-			}, (err,results) => { 
-				callback(err, results); 
-			})
+			}, callback)
 		},
 		callback => { //figure
-			//todo
-			callback(null)
+			async.forEachLimit(result.figureList, 1, (pid, callback) => { 
+ 				onFigureToFinishStatus(pid)
+			}, callback)
 		},
 		callback => { //failed
 			//todo
 			callback(null)
 		},
 	], (err, result) => { //返回结果
-		
+		console.warn('figure finish', err, result)
 	})
 } 
 
@@ -261,7 +262,8 @@ exports.onBuy = (userId, buyInfo, callback) => {
 	    		let periodTimerInfo = {
 	    			pid : pid,
 	    			gid : result.gid,
-	    			limitDate : limitDate
+	    			limitDate : limitDate,
+	    			status : periodStatus.Figure,
 	    		}
 
     			periodInfo.finalDate = curDate //添加最后购买日期
@@ -501,7 +503,7 @@ let onPeriodStatusTimerEnd_ = (pid) =>{
 			onFigureToFinishStatus(pid)
 			break
 		default :
-			console.warn('period status error with timer:', pid)
+			console.warn('period status error with timer:', pid, status)
 	}
 }
 
@@ -526,17 +528,84 @@ let onPeriodStatusTimerStart = (periodInfo) =>{
 	return true
 }
 
-
+//购买失败
 let onBuyStatusToFailedStatus = (pid, gid) =>{
 	//更新数据库状态
 	//资金返还
 
 }
 
+//统计
 let onFigureToFinishStatus = (pid) =>{
+// 1、取该商品最后购买时间前网站所有商品的最后100条购买时间记录；
+// 2、按时、分、秒、毫秒排列取值之和，除以该商品总参与人次后取余数；
+// 3、余数加上10000001 即为“幸运云购码”；
+// 4、余数是指整数除法中被除数未被除尽部分， 如7÷3 = 2 ......1，1就是余数
+	
+	async.waterfall([
+		(callback) => { //获取最后购买时间
+ 			Period
+ 				.findOne({pid : pid})
+ 				.select(figureParams)
+				.exec(callback)
+		},
+	    (result, callback) => { 
+	 		let status = result.status 
+	 		if (status != periodStatus.Figure) {
+	 			console.warn('Warning: period status not figure when figure luckyId', status)
+	 		}
+
+	 		let finalDate = result.finalDate //最后购买时间
+	 		let needNum = result.needNum //购买总需人次
+
+	 		async.waterfall([
+	 			(callback) => { //查询所有商品最后100条购买时间记录
+	 				recordAction.getLastRecordList(finalDate, callback)
+	 			},
+	 			(results, callback) =>{ //计算结果
+			    	let totalFigureNum = 0
+			    	let resultNum = results.length
+			    	let recordList = []
+
+			    	results.map(result => {
+			    		let buyDate = result.buyDate
+			    		recordList.push(result.recordId)
+			    		let hour = buyDate.getHours()
+			    		let minute = buyDate.getMinutes()
+			    		let second = buyDate.getSeconds()
+			    		let ms = buyDate.getMilliseconds()
+			    		totalFigureNum += hour * 100000000 + minute * 100000 + second * 1000 + ms
+			    	})
+
+			    	let luckyId = totalFigureNum % needNum + 1
+
+			    	console.warn('figure result', totalFigureNum, luckyId)
+
+			    	//获取中奖id的用户id
+			    	recordAction.getUserByLuckyId(
+			    		pid, 
+			    		luckyId, 
+			    		(err, luckyUserId) => callback(err, {
+			    			luckyUserId : luckyUserId,
+			    			luckyId : luckyId,
+			    			recordList : recordList,
+			    			totalFigureNum : totalFigureNum, 
+			    			status : periodStatus.Finish,
+			    		}))
+	 			},
+	 		], callback)
+	    },
+	    (results, callback) => {
+	    	//统计完成
+	    	//更新记录
+	    	console.warn('update period record', results)
+	    	Period.update({pid : pid}, {$set : results, $unset : {limitDate : 1, remainIds : 1, buyNum : 1}}, callback)
+	    }
+	], (err, result) => { //返回结果
+		console.warn('figure finish result', err, result)
+	})
 
 }
-
 
 let onPeroidStatusTimerCancel = (gid) =>{
 	console.warn('before', statusTimerDic)
