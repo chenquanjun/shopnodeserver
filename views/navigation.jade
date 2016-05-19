@@ -1,0 +1,17 @@
+mixin createHref(name, href)
+	a.btn.btn-default.nav-href-link(href=href role="button")
+		=name
+
+link(rel='stylesheet', href='/stylesheets/navigation.css')
+
+.nav-panel
+	+createHref('添加商品', '/product/add')
+	+createHref('商品列表', '/product/list')
+
+	+createHref('期数列表', '/period/list')
+
+	+createHref('充值', '/charge/main')
+	+createHref('充值记录', '/charge/list')
+
+	+createHref('用户注册', '/user/signup')
+	+createHref('用户登陆', '/user/signin')
