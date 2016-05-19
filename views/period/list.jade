@@ -18,7 +18,7 @@ block content
 			tr
 				th gid
 				th pid
-				th 数量
+				th 购买数/总数
 				th 状态
 				th 幸运号码用户
 				th 开始日期/结束日期
@@ -35,7 +35,7 @@ block content
 						th=periodInfo.pid
 						th
 							a(href='/product/edit?gid=' + gid)=gid
-						th=(periodInfo.buyNum ? periodInfo.buyNum : '-') + '/' + periodInfo.needNum
+						th=(typeof periodInfo.buyNum !== 'undefined' ? periodInfo.buyNum : '-') + '/' + periodInfo.needNum
 						th
 							if (status == 1)
 								label="可购买"
