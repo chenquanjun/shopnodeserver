@@ -32,6 +32,9 @@
 ###商品期数相关
 + [期数列表](http://localhost:8000/period/list)
 
+###购买相关
++ [购买记录](http://localhost:8000/record/list)
+
 ###充值
 *需要登陆*
 + [充值](http://localhost:8000/charge/main)
