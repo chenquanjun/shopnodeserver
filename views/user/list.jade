@@ -15,37 +15,28 @@ block content
 	table.table.table-striped.table-bordered
 		thred
 			tr
-				th recordId
-				th pid
-				th 购买日期
-				th 购买数量
-				th 购买id
-				th 状态
+				th 用户id
+				th 用户名
+				th 昵称
+				th 余额
+				th 头像
 		tbody
 			- var listNum = 0
-			- if (recordList)
-				each recordInfo in recordList
+			- if (userList)
+				each userInfo in userList
 					- listNum += 1
-					- var recordId = recordInfo.recordId
-					- var status = recordInfo.status
-					tr.product-panel(recordId=recordId)
-						th=recordInfo.recordId
-						th=recordInfo.pid
-						th=recordInfo.buyDate
-						th=recordInfo.buyNum
+					- var userId = userInfo.userId
+					tr.product-panel(userId=userId)
+						th=userId
+						th=userInfo.userName 
+						th=userInfo.nickName
+						th=userInfo.balance
 						th
-							-buyIdStr = ''
-							each buyId in recordInfo.buyIds
-								- buyIdStr = buyIdStr + buyId + ' '
-							span=buyIdStr
-						th 
-							if status == 1
-								label='失败'
-							else
-								label='正常'
+							if (userInfo.image)
+								img(src=userInfo.image)
+
 			- for (var i = 0; i < 10 - listNum; i++)
 				tr
-					th
 					th
 					th
 					th
@@ -57,7 +48,7 @@ block content
 		#page
 			label.col-sm-2.control-label='当前页数' 
 			p.col-sm-2.form-control-static= page + '/' + totalPageNum
-			label.col-sm-2.control-label='当前商品期数总数'
+			label.col-sm-2.control-label='当前用户总数'
 			p.col-sm-2.form-control-static= totalNum
 			-var lastPage = "list?page=" + (parseInt(page) - 1)
 			-var nextPage = "list?page=" + (parseInt(page) + 1)
@@ -70,3 +61,4 @@ block content
 
 block scripts
 	script.
+	
