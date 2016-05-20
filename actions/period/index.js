@@ -74,7 +74,7 @@ exports.init = (callback) => {
 				let failedList = []
 				let figureList = []
 
-				list.map(info => {
+				list.forEach(info => {
 					let pid = info.pid
 					if (dateNow >= info.limitDate) {
 						//购买状态的超时
@@ -381,22 +381,24 @@ let figureInitList = result =>{
 			}, callback)
 		},
 		callback => { //figure
-			if (result.figureList.length == 0) {
+			let list = result.figureList
+			if (list.length == 0) {
 				callback(null, null)
 				return
 			}
 
-			async.forEachLimit(result.figureList, 1, (pid, callback) => { 
+			async.forEachLimit(list, 1, (pid, callback) => { 
  				onFigureToFinishStatus(pid, callback)
 			}, callback)
 		},
 		callback => { //failed
-			if (result.failedList.length == 0) {
+			let list = result.failedList
+			if (list.length == 0) {
 				callback(null, null)
 				return
 			}
 
-			async.forEachLimit(result.figureList, 1, (pid, callback) => { 
+			async.forEachLimit(list, 1, (pid, callback) => { 
  				onBuyStatusToFailedStatus(pid, callback)
 			}, callback)
 
@@ -405,6 +407,8 @@ let figureInitList = result =>{
 		if (err) {
 			console.warn('Warning: Period init figure error', err)
 			return
+		}else{
+			console.warn('Period init result', result)
 		}
 
 		let buyResult = result[0]
@@ -517,6 +521,7 @@ let onPeriodStart = (gid, callback) =>{
 
 
 let onPeriodStatusTimerEnd_ = (pid) =>{
+	console.warn('on period status end', pid)
 	let periodInfo = statusTimerDic[pid]
 	if (!periodInfo) {
 		return
@@ -561,23 +566,37 @@ let onPeriodStatusTimerStart = (periodInfo) =>{
 //购买失败
 let onBuyStatusToFailedStatus = (pid, callback) =>{
 	async.waterfall([
-		(callback) => {
+		(callback) => { //记录标记失败，并返回记录列表
 			recordAction.onPeriodFailed(pid, callback)
 		},
 		(recordList, callback) =>{
 			console.warn('buy failed: user refund', recordList)
 			let refundDic = {}
 
+			let isDirty = false
+
 			recordList.forEach(recordInfo => {
 				let userId = recordInfo.userId
 				let num = refundDic[userId] || 0
 				num += recordInfo.buyNum
 				refundDic[userId] = num
+
+				isDirty = true
 			})
 
-			console.warn(refundDic)
-			userAction.onPeriodRefund(refundDic)
+			if (isDirty) {
+				console.warn('Period refund', refundDic)
+				userAction.onPeriodRefund(refundDic, callback) //用户资金退换
+			}else{
+				callback(null, null)
+			}
+		
 		},
+		(result, callback) => {
+			//更新period记录
+			let updateDic = {status : periodStatus.Failed}
+			Period.update({pid : pid}, {$set : updateDic}, callback)
+		}
 	], (err, result) => {
 		if (callback) {
 			callback(err, result)
@@ -717,8 +736,8 @@ let onPeriodForceStop = (gid, callback) =>{
  				onBuyStatusToFailedStatus(pid, callback)
 			}, callback)
 		}
-	], (err, callback) =>{
-		console.warn('on user stop', err, callback)
+	], (err, result) =>{
+		console.warn('on user stop', err, result)
 		callback(err, callback)
 	})
 }
