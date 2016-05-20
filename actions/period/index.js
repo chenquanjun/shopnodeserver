@@ -33,6 +33,7 @@ const listQueryStateParams = {
 }
 
 const figureParams = 'status finalDate needNum'
+const userStopParams = 'pid'
 
 const listQueryStateParamsDic = {
 	/*
@@ -168,6 +169,16 @@ exports.onBuy = (userId, buyInfo, callback) => {
 	}
 
 	async.waterfall([
+		(callback) => { //获取用户资金
+			userAction.getBalance(userId, callback)
+		},
+		(balance, callback) => { //判断资金是否足够
+			if (buyNum > balance) {
+				callback(getError('PERIOD_USER_BALANCE_NOT_ENOUGH', {userId : userId, balance : balance, buyNum : buyNum}))
+				return
+			}
+			callback(null)
+		},
 		(callback) => { //获取期数信息
 			Period.findOne({pid : pid}, periodBuyParams , callback)
 		},
@@ -367,8 +378,6 @@ let figureInitList = result =>{
 						let result = onPeriodStatusTimerStart(periodInfo)
 						callback(null, result)
 					})
-				
-
 			}, callback)
 		},
 		callback => { //figure
@@ -378,12 +387,19 @@ let figureInitList = result =>{
 			}
 
 			async.forEachLimit(result.figureList, 1, (pid, callback) => { 
- 				onFigureToFinishStatus(pid)
+ 				onFigureToFinishStatus(pid, callback)
 			}, callback)
 		},
 		callback => { //failed
-			//todo
-			callback(null, null)
+			if (result.failedList.length == 0) {
+				callback(null, null)
+				return
+			}
+
+			async.forEachLimit(result.figureList, 1, (pid, callback) => { 
+ 				onBuyStatusToFailedStatus(pid, callback)
+			}, callback)
+
 		},
 	], (err, result) => { //返回结果
 		if (err) {
@@ -543,16 +559,34 @@ let onPeriodStatusTimerStart = (periodInfo) =>{
 }
 
 //购买失败
-let onBuyStatusToFailedStatus = (pid) =>{
-	//更新数据库状态
-	//读取购买记录
-	//资金返还
+let onBuyStatusToFailedStatus = (pid, callback) =>{
+	async.waterfall([
+		(callback) => {
+			recordAction.onPeriodFailed(pid, callback)
+		},
+		(recordList, callback) =>{
+			console.warn('buy failed: user refund', recordList)
+			let refundDic = {}
 
+			recordList.forEach(recordInfo => {
+				let userId = recordInfo.userId
+				let num = refundDic[userId] || 0
+				num += recordInfo.buyNum
+				refundDic[userId] = num
+			})
 
+			console.warn(refundDic)
+			userAction.onPeriodRefund(refundDic)
+		},
+	], (err, result) => {
+		if (callback) {
+			callback(err, result)
+		}		
+	})
 }
 
 //统计
-let onFigureToFinishStatus = (pid) =>{
+let onFigureToFinishStatus = (pid, callback) =>{
 // 1、取该商品最后购买时间前网站所有商品的最后100条购买时间记录；
 // 2、按时、分、秒、毫秒排列取值之和，除以该商品总参与人次后取余数；
 // 3、余数加上10000001 即为“幸运云购码”；
@@ -595,10 +629,8 @@ let onFigureToFinishStatus = (pid) =>{
 
 			    	let luckyId = totalFigureNum % needNum + 1
 
-			    	console.warn('figure result', totalFigureNum, luckyId)
-
 			    	//获取中奖id的用户id
-			    	recordAction.getUserByLuckyId(
+			    	recordAction.getLuckyUserByLuckyId(
 			    		pid, 
 			    		luckyId, 
 			    		(err, luckyUserId) => callback(err, {
@@ -614,17 +646,17 @@ let onFigureToFinishStatus = (pid) =>{
 	    (results, callback) => {
 	    	//统计完成
 	    	//更新记录
-	    	console.warn('update period record', results)
 	    	Period.update({pid : pid}, {$set : results, $unset : {limitDate : 1, remainIds : 1, buyNum : 1}}, callback)
 	    }
 	], (err, result) => { //返回结果
-		console.warn('figure finish result', err, result)
+		if (callback) {
+			callback(err, result)
+		}
 	})
 
 }
 
 let onPeroidStatusTimerCancel = (gid) =>{
-	console.warn('before', statusTimerDic)
 	let results = []
 
 	for (let pid in statusTimerDic){
@@ -641,24 +673,54 @@ let onPeroidStatusTimerCancel = (gid) =>{
 	}
 
 	results.map(pid => delete statusTimerDic[pid])
-	console.warn('end', statusTimerDic)
 }
 
 //强制停止期数
 let onPeriodForceStop = (gid, callback) =>{
-	//停止所有计时器
-	onPeroidStatusTimerCancel(gid)
+	onPeroidStatusTimerCancel(gid) //停止所有计时器
 
-	//更新期数状态
-	let set = {status : periodStatus.UserStop}
-	Period.update(
-		{gid :gid, status : periodStatus.Buy},
-		{$set : set},
-		(err, results) =>{
-			console.warn(results)
-			callback(err, results)
+	async.waterfall([ 
+		callback => { //获取正在购买状态的id
+			Period
+				.find({gid :gid, status : periodStatus.Buy})
+				.select(userStopParams)
+				.exec((err, list) => {
+					if (err) {
+						callback(err)
+						return
+					}
+
+					let result = []
+					list.forEach(info => result.push(info.pid))
+
+					callback(null, result)
+				})
+		},
+		(pids, callback) => { //更新期数状态
+			let set = {status : periodStatus.UserStop}
+			Period.update(
+				{gid :gid, status : periodStatus.Buy},
+				{$set : set},
+				{multi: true}, //多个记录
+				(err, results) =>{
+					if (err) {
+						callback(err)
+						return
+					}
+
+					callback(null, pids)
+				}
+			)
+		},
+		(pids, callback) =>{
+			async.forEachLimit(pids, 1, (pid, callback) => { 
+ 				onBuyStatusToFailedStatus(pid, callback)
+			}, callback)
 		}
-	)
+	], (err, callback) =>{
+		console.warn('on user stop', err, callback)
+		callback(err, callback)
+	})
 }
 
 

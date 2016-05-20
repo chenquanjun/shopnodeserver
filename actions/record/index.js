@@ -7,17 +7,19 @@ const tools = require('../../tools')
 
 //constans
 const limits = require('../../constants/limit')
-
+const recordStatus = require('../../constants/status').record
 const recordModel = require('../../models/record')
 const Record = recordModel.Record
 const configAction = require('../config')
 
 //config
-const userQueryParams = 'recordId pid buyNum buyDate buyIds'
-const allQueryParams = 'userId recordId pid buyNum buyDate buyIds'
+const userQueryParams = 'recordId pid buyNum buyDate buyIds status'
+const allQueryParams = 'userId recordId pid buyNum buyDate buyIds status'
 
 const lastQueryParams = 'userId recordId buyDate'
 const luckyIdParams = 'userId buyIds'
+
+const pidQueryParams = 'userId buyNum'
 
 //初始化
 exports.init = (callback) => {
@@ -28,7 +30,8 @@ exports.init = (callback) => {
 	})
 }
 
-exports.getUserByLuckyId = (pid, luckyId, callback) => {
+//通过幸运id找到购买id
+exports.getLuckyUserByLuckyId = (pid, luckyId, callback) => {
 	Record
 		.find({pid : pid})
 		.select(luckyIdParams)
@@ -59,6 +62,27 @@ exports.getUserByLuckyId = (pid, luckyId, callback) => {
 		})
 }
 
+//期数失败，标记记录
+exports.onPeriodFailed = (pid ,callback) =>{
+	async.waterfall([
+		(callback) => {
+			Record.update(
+				{pid : pid}, 
+				{$set : {status : recordStatus.Failed}}, 
+				{multi: true}, //多个记录
+				callback
+			)
+		},
+		(result, callback) => {
+			Record
+				.find({pid : pid})
+				.select(pidQueryParams)
+				.exec(callback)
+		},
+	], callback)
+}
+
+//获取最近的购买记录
 exports.getLastRecordList = (date, callback) => {
 	let maxQueryNum = limits.RECORD_FIGURE_QUERY_MAX_NUM
 	let paramsDic = lastQueryParams.split(' ')
@@ -82,12 +106,13 @@ exports.getLastRecordList = (date, callback) => {
 		})
 }
 
-
+//获取所有记录
 exports.getAllList = (page, callback) => {
 	//only admin can list this  
 	getList(null, page, callback)
 }
 
+//获取用户记录
 exports.getListByUserId = (userId, page, callback) => {
 	getList(userId, page, callback)
 }
@@ -118,11 +143,12 @@ exports.addRecord = (recordInfo, callback) =>{
 	})
 }
 
-
+//获取用户记录数量
 exports.getCountByUserId = (userId, callback) => {
 	getCount(userId, callback)
 }
 
+//获取所有记录数量
 exports.getCount = (callback) => {
 	getCount(null, callback)
 }

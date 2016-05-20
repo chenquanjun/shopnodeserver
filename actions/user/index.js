@@ -16,7 +16,8 @@ const userModel = require('../../models/user')
 const User = userModel.User
 //config
 const userSigninParams = 'password salt userId'
-
+const balanceParams = 'balance'
+const allInfoParams = 'userId userName nickName imageId balance'
 
 
 //初始化
@@ -27,7 +28,7 @@ exports.init = (callback) => {
 		callback(err, result)
 	})
 }
- 
+
 exports.addBalance = (userId, balance, callback) => {
 	if (balance <= 0) {
 		callback(getError('USER_ADD_BALANCE_ERROR', {userId : userId, balance : balance}))
@@ -39,15 +40,44 @@ exports.addBalance = (userId, balance, callback) => {
 	})
 }
 
+exports.getBalance = (userId, callback) => {
+	getBalance(userId, callback)
+}
+
 exports.onBuyPeriod = (userId, cost, callback) =>{
 	if (cost <= 0) {
 		callback(getError('USER_BUY_COST_ERROR', {userId : userId, cost : cost}))
 		return
 	}
 
-	User.update({userId: userId}, {$inc: {balance: -cost}}, (err, result) =>{
-		callback(err, result)
-	})
+	async.waterfall([
+		callback => getBalance(userId, callback),
+		(balance, callback) => {
+			if (cost > balance) {
+				callback(getError('USER_BALANCE_NOT_ENOUGH', {userId : userId, balance : balance, cost : cost}))
+				return
+			}
+			callback(null)
+		},
+		callback => {
+			User.update({userId: userId}, {$inc: {balance: -cost}}, (err, result) =>{
+				callback(err, result)
+			})			
+		}
+	], callback)
+}
+
+exports.onPeriodRefund = (refundDic, callback) =>{
+	let refundIdList = []
+
+	for (let userId in refundDic){
+		refundIdList.push(userId)
+	}
+
+	async.map(refundIdList, (userId, callback) =>{
+		let addNum = refundDic[userId]
+		User.update({userId: userId}, {$inc: {balance: addNum}}, callback)
+	}, callback)
 }
 
 exports.checkAuthInfo = (user, callback) => {
@@ -215,6 +245,99 @@ exports.addUser = (userInfo, callback) =>{
 	], (err, result) => { //返回结果
 		callback(err, result)
 	})
+}
+
+exports.getCount = (callback) =>{
+	User.count((err, totalProductNum) =>{
+		if (err) {
+			callback(err)
+			return
+		}
+
+		let maxQueryNum = limits.USER_QUERY_MAX_NUM
+		let totalPageNum = Math.floor(totalProductNum / maxQueryNum) + 1
+		callback(null, totalProductNum, totalPageNum)
+	})
+}
+
+exports.getList = (page, callback) => {
+	async.waterfall([
+		(callback) => { //
+			let maxQueryNum = limits.USER_QUERY_MAX_NUM
+
+			let paramsDic = allInfoParams.split(' ')
+ 			User
+ 				.find()
+ 				.select(allInfoParams)
+ 				.limit(maxQueryNum)
+ 				.skip(page * maxQueryNum)
+				.exec((err, list) => {
+					if (err) {
+						callback(err)
+						return
+					}
+					let results = []
+					list.map(info => {
+						let result = {}
+						paramsDic.map(key => result[key] = info[key])
+						results.push(result)
+					})
+					callback(err, results)
+				})
+		},
+	    convertUserImageId,
+	], (err, result) => {
+		callback(err, result)
+	})
+}
+
+//将用户的imageid转换成image图片
+let convertUserImageId = (userList, callback) => {
+	let imageSet = new Set()
+
+	let isDirty = false
+	userList.forEach(
+		userInfo => {
+			if (userInfo.imageId) {
+				isDirty = true
+				imageSet.add(userInfo.imageId)
+			}
+		}
+	)
+
+	if (isDirty) {
+		let images = [...imageSet]
+		imageAction.getImagesByIds(images, (err, imageDic) =>{
+	    	userList.forEach(
+	    		userInfo => {
+	    			let imageId = userInfo.imageId
+
+	    			if (imageId) {
+	    				userInfo.image = imageDic[imageId]
+	    			}	    			
+	    			delete userInfo.imageId
+	    		}
+	    	)
+	    	callback(null, userList)
+		})	
+	}else{
+		userList.forEach(userInfo => delete userInfo.imageId)
+		callback(null, userList)
+	}
+}
+
+let getBalance = (userId, callback) => {
+	User
+		.findOne({userId : userId})
+		.select(balanceParams)
+		.exec((err, result) =>{
+			if (err) {
+				callback(err)
+				return
+			}
+
+			callback(null, result.balance)
+		})
 }
 
 
