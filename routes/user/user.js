@@ -13,7 +13,7 @@ const userAction = require('../../actions/user')
 
 router.get('/logout', function(req, res) {
     req.session.user = null;
-    res.redirect('/signin');
+    res.redirect('signin');
 });
 
 // get add
@@ -133,6 +133,50 @@ router.post('/signin', (req, res, next) => {
 		}
 	})
 	
+})
+
+
+router.get('/list', (req, res, next) => {
+	let page = parseInt(req.query.page) || 1
+
+	async.waterfall([
+		(callback) => { //管理员验证
+			callback(null)
+		},
+		(callback) => { 
+			async.waterfall([
+				callback => userAction.getCount(callback),
+				(totalNum, totalPageNum, callback) => { 
+
+					let result = {
+						totalPageNum : totalPageNum, 
+						totalNum : totalNum,
+						page : page,
+					}
+
+					let queryPage = page - 1
+
+					if (queryPage < 0 || queryPage > totalPageNum) {
+						callback(null, result)
+						return
+					}
+
+					userAction.getList(
+						queryPage,
+						(err, userList) => {
+							result.userList = userList
+							callback(err, result)
+						}
+					)
+				},
+
+			], callback)
+		},
+	], (err, result) => { //返回结果
+		let params = Object.assign({ title : '用户列表'}, result)
+
+	    res.render(views.USER_LIST, params)
+	})
 })
 
 module.exports = router;
