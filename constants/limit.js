@@ -17,6 +17,7 @@ const params = {
  	//user
 	SALT_LENGTH : 32, //加密盐的长度
 	SESSION_EXPIRE_TIME : 2 * 60 * 60 * 10000, //session超时时间
+	USER_QUERY_MAX_NUM : 10, //每次查询最大用户数目
 }
 
 module.exports = params

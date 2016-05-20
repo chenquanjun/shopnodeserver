@@ -8,6 +8,8 @@ const params = {
 	USER_SIGNUP : 'user/signup',
 	USER_SIGNIN : 'user/signin',
 
+	USER_LIST : 'user/list',
+
 	//period
 	PERIOD_LIST : 'period/list',
 

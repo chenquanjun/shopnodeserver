@@ -9,7 +9,10 @@ const params = {
 		Finish : 3, //已结束
 		Failed : 4,
 		UserStop : 5,
-	}
+	},
+	record : {
+		Failed : 1,
+	},
 }
 
 module.exports = params

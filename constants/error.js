@@ -81,7 +81,11 @@ const params = {
 		errNum : 412,
 		errStr : 'period list query state error',
 	},
-
+	PERIOD_USER_BALANCE_NOT_ENOUGH : {
+		errNum : 413,
+		errStr : 'period user balance not enough',
+	},
+	
 	//user
 	USER_ADD_BALANCE_ERROR : {
 		errNum : 501,
@@ -114,6 +118,10 @@ const params = {
 	USER_ID_NOT_EXIST : {
 		errNum : 508,
 		errStr : 'user id not exist',
+	},
+	USER_BALANCE_NOT_ENOUGH : {
+		errNum : 509,
+		errStr : 'user balance not enough',
 	},
 }
 
