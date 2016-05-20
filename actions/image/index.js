@@ -101,7 +101,7 @@ let figureImageInfoArr = (data, callback) =>{
 		},
 		(newIds, callback) => { //写入数据库
 			let imageInfoArr = []
-
+			let imageNum = newIds.length
 			for (let i = 0; i < imageNum; i ++){
 				imageInfoArr.push({
 					imageId : newIds[i],
