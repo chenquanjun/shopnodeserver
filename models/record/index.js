@@ -8,6 +8,7 @@ const recordSchema = new Schema({
     buyDate : { type: Date }, //购买日期
     buyNum : Number, //购买数量
     buyIds : [Number], //购买id
+    status : Number, //状态
 })
 
 const Model = exports.Record = mongoose.model('record', recordSchema)
