@@ -1,7 +1,8 @@
 "use strict";
+//lib
 const async = require('async')
 const util = require('util')
-
+//model
 const configModel = require('../../models/config')
 const Config = configModel.Config
 

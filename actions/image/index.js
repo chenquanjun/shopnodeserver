@@ -1,12 +1,15 @@
 "use strict";
+//lib
 const async = require('async')
 const util = require('util')
-
+//actions
 const configAction = require('../config')
-
+//constants
+const getError = require('../../constants/error').getError
+//model
 const imageModel = require('../../models/image')
 const Image = imageModel.Image
-
+//config
 const listSelectParams = 'imageId image'
 
 //初始化
@@ -38,7 +41,7 @@ exports.getImagesByIds = (imageIds, callback) => {
 exports.getImageIds = (images, callback) =>{
 
 	if (!util.isArray(images)) {
-		callback('images not exist')
+		callback(getError('IMAGE_PARAMS_NOT_ARRAY', images))
 		return
 	}
 
@@ -97,12 +100,6 @@ let figureImageInfoArr = (data, callback) =>{
 			configAction.genImageId(newImages.length, callback)
 		},
 		(newIds, callback) => { //写入数据库
-			let imageNum = newIds.length
-			if (imageNum !== newImages.length) {
-				callback('image num not equal to new ids' + imageNum + ' ' + newImages.length)
-				return
-			}
-
 			let imageInfoArr = []
 
 			for (let i = 0; i < imageNum; i ++){

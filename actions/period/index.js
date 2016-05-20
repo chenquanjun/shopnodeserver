@@ -3,7 +3,6 @@
 const async = require('async')
 const util = require('util')
 const schedule = require('node-schedule')
-
 //tools
 const tools = require('../../tools')
 //actions
@@ -11,15 +10,15 @@ const productAction = require('../product')
 const recordAction = require('../record')
 const userAction = require('../user')
 const configAction = require('../config')
-//constans
+//constants
 const limits = require('../../constants/limit')
 const statuses = require('../../constants/status')
 const productStatus = statuses.product
 const periodStatus = statuses.period
+const getError = require('../../constants/error').getError
 //model
 const periodModel = require('../../models/period')
 const Period = periodModel.Period
-
 //config
 const allParams = 'gid pid needNum buyNum status luckyId luckyUserId remainIds startDate limitDate finalDate'
 const periodStatusParams = 'pid gid status limitDate'
@@ -133,63 +132,6 @@ exports.getPeriodCount = (callback) =>{
 	})
 }
 
-//初始化处理数据库的期数
-let figureInitList = result =>{
-	async.series([
-		callback => { //buy
-			async.map(result.buyList, (pid, callback) =>{
-				Period
-					.findOne({pid : pid})
-					.select(periodStatusParams)
-					.exec((err, periodInfo) =>{
-						if (err) {
-							callback(err)
-							return
-						}
-						let result = onPeriodStatusTimerStart(periodInfo)
-						callback(null, result)
-					})
-				
-
-			}, callback)
-		},
-		callback => { //figure
-			if (result.figureList.length == 0) {
-				callback(null, null)
-				return
-			}
-
-			async.forEachLimit(result.figureList, 1, (pid, callback) => { 
- 				onFigureToFinishStatus(pid)
-			}, callback)
-		},
-		callback => { //failed
-			//todo
-			callback(null, null)
-		},
-	], (err, result) => { //返回结果
-		if (err) {
-			console.warn('Warning: Period init figure error', err)
-			return
-		}
-
-		let buyResult = result[0]
-		let figureResult = result[1]
-		let failedResult = result[2]
-
-		if (util.isArray(buyResult) && buyResult.length > 0) {
-			console.log('Period: on buy num', buyResult.length)
-		}
-
-		if (util.isArray(figureResult) && figureResult.length > 0) {
-			console.log('Period: on figure num', figureResult.length)
-		}
-
-		if (util.isArray(failedResult) && failedResult.length > 0) {
-			console.log('Period: on failed num', failedResult.length)
-		}
-	})
-} 
 
 //商品上架的状态切换
 exports.onProductStatusChange = (gid, status, isForce) => {
@@ -214,14 +156,14 @@ exports.onBuy = (userId, buyInfo, callback) => {
 	let buyNum = parseInt(buyInfo.buyNum) || 0
 
 	if (buyNum <= 0) {
-		callback('buy num error')
+		callback(getError('PERIOD_BUY_NUM_ERROR', buyNum))
 		return
 	}
 
 	let pid = parseInt(buyInfo.pid) || 0
 
 	if (pid <= 0) {
-		callback('pid error')
+		callback(getError('PERIOD_PID_ERROR', buyNum))
 		return
 	}
 
@@ -231,31 +173,31 @@ exports.onBuy = (userId, buyInfo, callback) => {
 		},
 	    (result, callback) => { //判断是否足够购买
 	    	if (!result) {
-	    		callback('period info not exist')
+	    		callback(getError('PERIOD_INFO_NOT_EXIST', pid))
 	    		return
 	    	}
 
 	    	let status = result.status
 	    	if (status != periodStatus.Buy) {
-	    		callback('period cannot buy')
+	    		callback(getError('PERIOD_STATUS_NOT_BUY', {pid : pid, status : status}))
 	    		return
 	    	}
 
 	    	let remainIds = result.remainIds
 	    	let remainNum = result.needNum - result.buyNum
 	    	if (remainIds.length != remainNum) {
-	    		callback('period id num not match')
+	    		callback(getError('PERIOD_REMAIN_ID_NUM_ERROR', {num1 : remainIds.length, num2 : remainNum}))
 	    		return
 	    	}
 
 	    	if (buyNum > remainNum) {
-	    		callback('period not enough')
+	    		callback(getError('PERIOD_REMAIN_ID_NOT_ENOUGH', remainNum))
 	    		return
 	    	}
 
 	    	let curDate = new Date()
 	    	if (curDate > result.limitDate) {
-	    		callback('period already timeout')
+	    		callback(getError('PERIOD_ALREADY_TIMEOUT', result.limitDate))
 	    		return
 	    	}
 
@@ -324,7 +266,7 @@ exports.getPeriodInfo = (pid, callback) =>{
 		},
 	    (result, callback) => { //判断是否足够购买
 	    	if (!result) {
-	    		callback('period info not exist')
+	    		callback(getError('PERIOD_INFO_NOT_EXIST'), pid)
 	    		return
 	    	}
 
@@ -358,13 +300,13 @@ exports.getPeriodInfo = (pid, callback) =>{
 					})
 					break
 				case periodStatus.Failed : 
-					callback('period failed')
+					callback(getError('PERIOD_STATUS_FAILED'), pid)
 					break
 				case periodStatus.UserStop : 
-					callback('period stopped')
+					callback(getError('PERIOD_STATUS_STOP'), pid)
 					break
 				default :
-					callback('period status not defined')
+					callback(getError('PERIOD_STATUS_NOT_DEFINED'), pid)
 	    	}
 
 	    },
@@ -376,7 +318,7 @@ exports.getPeriodInfo = (pid, callback) =>{
 //获取期数列表
 exports.getPeriodList = (currentPage, queryState, callback) =>{
 	if (currentPage < 0) {
-		callback('query page error')
+		callback(getError('PERIOD_LIST_PAGE_ERROR', currentPage))
 		return
 	}
 
@@ -384,10 +326,9 @@ exports.getPeriodList = (currentPage, queryState, callback) =>{
 	let queryParamsDic = listQueryStateParamsDic[queryState]
 
 	if (!queryParams) {
-		callback('query state param error')
+		callback(getError('PERIOD_LIST_QUERY_STATE_ERROR', queryState))
 		return
 	}
-
 
 	let maxQueryNum = limits.PERIOD_QUERY_MAX_NUM
 	Period
@@ -401,8 +342,6 @@ exports.getPeriodList = (currentPage, queryState, callback) =>{
 				return
 			}
 			let results = []
-
-
 			list.map(info => {
 				let result = {}
 				queryParamsDic.map(key => result[key] = info[key])
@@ -412,10 +351,62 @@ exports.getPeriodList = (currentPage, queryState, callback) =>{
 		})
 }
 
+//初始化处理数据库的期数
+let figureInitList = result =>{
+	async.series([
+		callback => { //buy
+			async.map(result.buyList, (pid, callback) =>{
+				Period
+					.findOne({pid : pid})
+					.select(periodStatusParams)
+					.exec((err, periodInfo) =>{
+						if (err) {
+							callback(err)
+							return
+						}
+						let result = onPeriodStatusTimerStart(periodInfo)
+						callback(null, result)
+					})
+				
 
-//期数状态变化
-let onPeriodStatusChange = (gid, nextStatus, callback) =>{
+			}, callback)
+		},
+		callback => { //figure
+			if (result.figureList.length == 0) {
+				callback(null, null)
+				return
+			}
 
+			async.forEachLimit(result.figureList, 1, (pid, callback) => { 
+ 				onFigureToFinishStatus(pid)
+			}, callback)
+		},
+		callback => { //failed
+			//todo
+			callback(null, null)
+		},
+	], (err, result) => { //返回结果
+		if (err) {
+			console.warn('Warning: Period init figure error', err)
+			return
+		}
+
+		let buyResult = result[0]
+		let figureResult = result[1]
+		let failedResult = result[2]
+
+		if (util.isArray(buyResult) && buyResult.length > 0) {
+			console.log('Period: on buy num', buyResult.length)
+		}
+
+		if (util.isArray(figureResult) && figureResult.length > 0) {
+			console.log('Period: on figure num', figureResult.length)
+		}
+
+		if (util.isArray(failedResult) && failedResult.length > 0) {
+			console.log('Period: on failed num', failedResult.length)
+		}
+	})
 } 
 
 //期数开始
@@ -552,9 +543,11 @@ let onPeriodStatusTimerStart = (periodInfo) =>{
 }
 
 //购买失败
-let onBuyStatusToFailedStatus = (pid, gid) =>{
+let onBuyStatusToFailedStatus = (pid) =>{
 	//更新数据库状态
+	//读取购买记录
 	//资金返还
+
 
 }
 

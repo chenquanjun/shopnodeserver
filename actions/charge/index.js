@@ -2,19 +2,17 @@
 //lib
 const async = require('async')
 const util = require('util')
-
 //tools
 const tools = require('../../tools')
 //actions
 const userAction = require('../user')
 const configAction = require('../config')
-//constans
+//constants
 const limits = require('../../constants/limit')
-
+const getError = require('../../constants/error').getError
 //model
 const chargeModel = require('../../models/charge')
 const Charge = chargeModel.Charge
-
 //config
 const userQueryParams = 'chargeId chargeNum chargeDate source sourceInfo'
 const allQueryParams = 'userId chargeId chargeNum chargeDate source sourceInfo'
@@ -44,7 +42,7 @@ exports.addBalance = (userId, chargeInfo, callback) =>{
 	let sourceInfo = chargeInfo.sourceInfo || ''
 
 	if (chargeNum <= 0) {
-		callback('charge num error:' + chargeNum)
+		callback(getError('CHARGE_NUM_ERROR', chargeNum))
 		return
 	}
 

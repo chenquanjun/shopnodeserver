@@ -1,19 +1,21 @@
 "use strict";
+//lib
 const async = require('async')
 const util = require('util')
-
+//tools
+const tools = require('../../tools')
+//actions
 const imageAction = require('../image')
 const configAction = require('../config')
 const periodAction = require('../period')
-
-const tools = require('../../tools')
-
+//constants
 const limits = require('../../constants/limit')
 const productStatus = require('../../constants/status').product
-
+const getError = require('../../constants/error').getError
+//model
 const productModel = require('../../models/product')
 const Product = productModel.Product
-
+//config
 const allInfoParams = 'gid imageIds name price status'
 const periodListParams = 'gid imageIds name price'
 const periodInfoParams = 'status price'
@@ -119,7 +121,7 @@ exports.getProductByGid = (gid, callback) =>{
 		},
 	    (productInfo, callback) => { //
 			if (!productInfo) {
-				callback("product not exist")
+				callback(getError('PRODUCT_NOT_EXIST', gid))
 				return
 			}
 
@@ -194,7 +196,7 @@ exports.editProduct = (productInfo, callback) =>{
 exports.setProductStatus = (gid, status, isForce, callback) =>{
 	let isStatusExist = tools.hasValueInObject(productStatus, status)
 	if (!isStatusExist) {
-		callback('product status error')
+		callback(getError('PRODUCT_STATUS_ERROR', {gid : gid, status : status}))
 		return
 	}
 
@@ -221,7 +223,7 @@ exports.setProductStatus = (gid, status, isForce, callback) =>{
 //添加商品
 exports.addProduct = (productInfo, callback) => {
 	if (!util.isObject(productInfo)) {
-		callback('product info not object')
+		callback(getError('PRODUCT_ADD_ERROR', productInfo))
 		return
 	}
 

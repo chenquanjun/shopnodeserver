@@ -1,19 +1,22 @@
 "use strict";
+//lib
 const async = require('async')
 const util = require('util')
 const schedule = require('node-schedule')
-
+//tools
 const tools = require('../../tools')
-
-const limits = require('../../constants/limit')
-
-const userModel = require('../../models/user')
-const User = userModel.User
-
-const userSigninParams = 'password salt userId'
-
+//actions
 const imageAction = require('../image')
 const configAction = require('../config')
+//constants
+const limits = require('../../constants/limit')
+const getError = require('../../constants/error').getError
+//model
+const userModel = require('../../models/user')
+const User = userModel.User
+//config
+const userSigninParams = 'password salt userId'
+
 
 
 //初始化
@@ -27,7 +30,7 @@ exports.init = (callback) => {
  
 exports.addBalance = (userId, balance, callback) => {
 	if (balance <= 0) {
-		callback('add balance value error')
+		callback(getError('USER_ADD_BALANCE_ERROR', {userId : userId, balance : balance}))
 		return
 	}
 
@@ -38,7 +41,7 @@ exports.addBalance = (userId, balance, callback) => {
 
 exports.onBuyPeriod = (userId, cost, callback) =>{
 	if (cost <= 0) {
-		callback('buy cost value error')
+		callback(getError('USER_BUY_COST_ERROR', {userId : userId, cost : cost}))
 		return
 	}
 
@@ -51,28 +54,28 @@ exports.checkAuthInfo = (user, callback) => {
 	async.waterfall([
 		(callback) => { 
 			if (!user) {
-				callback('user not login')
+				callback(getError('USER_NOT_LOGIN'))
 				return
 			}
 
 			let userId = user.userId
 
 			if (!util.isNumber(userId)) {
-				callback('user info error')
+				callback(getError('USER_INFO_ERROR'))
 				return
 			}
 
 			let timeStamp = user.timeStamp
 
 			if (!util.isNumber(timeStamp)) {
-				callback('time error')
+				callback(getError('USER_INFO_ERROR'))
 				return
 			}
 
 			let curTimeStamp = tools.getTimeStamp()
 
 			if (curTimeStamp > timeStamp + limits.SESSION_EXPIRE_TIME) {
-				callback('time expire')
+				callback(getError('USER_LOGIN_TOKEN_OUTDATE'))
 				return
 			}
 
@@ -104,7 +107,7 @@ exports.onSignin = (userName, password, callback) =>{
 					}
 
 					if (!result) {
-						callback('user or password not right')
+						callback(getError('USER_NAME_OR_PASSWORD_ERROR'))
 						return
 					}
 					callback(null, result)
@@ -119,7 +122,7 @@ exports.onSignin = (userName, password, callback) =>{
 	    	if (correctPassword == submitPassword) {
 	    		callback(null, result.userId)
 	    	}else{
-	    		callback('user or password not right')
+	    		callback(getError('USER_NAME_OR_PASSWORD_ERROR'))
 	    	}
 	    },
 	], (err, result) => { //返回结果
@@ -138,7 +141,7 @@ exports.addUser = (userInfo, callback) =>{
 						return
 					}
 					if (result) {
-						callback('user name already exist')
+						callback(getError('USER_NAME_ALREADY_EXIST', userName))
 						return
 					}
 					callback(null)
@@ -224,7 +227,7 @@ let checkUserId = (userId, callback) => {
 				return
 			}
 			if (!result) {
-				callback('user id not eixst')
+				callback(getError('USER_ID_NOT_EXIST'))
 				return
 			}
 			callback(null, userId)
