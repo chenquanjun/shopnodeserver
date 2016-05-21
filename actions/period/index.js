@@ -26,6 +26,7 @@ const periodBuyParams = 'gid status needNum buyNum remainIds limitDate'
 
 const figureParams = 'status finalDate needNum'
 const userStopParams = 'pid'
+const newPeriodParams = 'gid'
 
 const periodStateParams = 'gid pid status needNum buyNum luckyId luckyUserId finalDate'
 
@@ -367,10 +368,10 @@ exports.getPeriodList = (currentPage, queryState, callback) =>{
 }
 
 //初始化处理数据库的期数
-let figureInitList = result =>{
+let figureInitList = initList =>{
 	async.series([
 		callback => { //buy
-			async.map(result.buyList, (pid, callback) =>{
+			async.map(initList.buyList, (pid, callback) =>{
 				Period
 					.findOne({pid : pid})
 					.select(periodStatusParams)
@@ -385,7 +386,7 @@ let figureInitList = result =>{
 			}, callback)
 		},
 		callback => { //figure
-			let list = result.figureList
+			let list = initList.figureList
 			if (list.length == 0) {
 				callback(null, null)
 				return
@@ -396,7 +397,7 @@ let figureInitList = result =>{
 			}, callback)
 		},
 		callback => { //failed
-			let list = result.failedList
+			let list = initList.failedList
 			if (list.length == 0) {
 				callback(null, null)
 				return
@@ -430,8 +431,48 @@ let figureInitList = result =>{
 		if (util.isArray(failedResult) && failedResult.length > 0) {
 			console.log('Period: on failed num', failedResult.length)
 		}
+
+		
+		let pids = [...initList.failedList, ...initList.figureList]
+
+		figurePidsForNewPeriod(pids)
 	})
 } 
+
+let figurePidsForNewPeriod = (pids) =>{
+	if (pids.length == 0) { //判断是否需要开新的一期
+		return
+	}
+
+	async.waterfall([
+		callback => {
+			Period
+				.find({'pid': {'$in' : pids}})
+				.select(newPeriodParams)
+				.exec(callback)
+
+		},
+		(results, callback) =>{
+			if (util.isArray(results) && results.length > 0) {
+				let gidSet = new Set()
+				results.forEach(result => gidSet.add(result.gid))
+
+				let gids = [...gidSet]
+				callback(null, gids)
+			}else{
+				callback('no pid')
+			}
+		},
+		(gids, callback) => {
+			console.warn('Period start with gid', gids)
+			async.forEachLimit(gids, 1, (gid, callback) => { 
+ 				onPeriodStart(gid, callback)
+			}, callback)
+		}
+	], (err, result) => {
+
+	})
+}
 
 //期数开始
 let onPeriodStart = (gid, callback) =>{
