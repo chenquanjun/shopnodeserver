@@ -28,6 +28,7 @@
 ###用户相关
 + [用户注册](http://localhost:8000/user/signup)
 + [用户登陆](http://localhost:8000/user/signin)
++ [用户列表](http://localhost:8000/user/list)
 
 ###商品期数相关
 + [期数列表](http://localhost:8000/period/list)

@@ -24,6 +24,14 @@ const allParams = 'gid pid needNum buyNum status luckyId luckyUserId remainIds s
 const periodStatusParams = 'pid gid status limitDate'
 const periodBuyParams = 'gid status needNum buyNum remainIds limitDate'
 
+const figureParams = 'status finalDate needNum'
+const userStopParams = 'pid'
+
+const periodStateParams = 'gid pid status needNum buyNum luckyId luckyUserId finalDate'
+
+const periodInitBuyParams = 'pid limitDate finalDate needNum buyNum'
+const periodInitFigureParams = 'pid'
+
 const listQueryStateParams = {
 	[0] : 'gid pid needNum buyNum status luckyId luckyUserId startDate limitDate finalDate',
 	[periodStatus.Buy] : 'pid gid buyNum needNum', //可购买 
@@ -32,19 +40,11 @@ const listQueryStateParams = {
 	[periodStatus.Failed] : 'pid gid buyNum needNum',
 }
 
-const figureParams = 'status finalDate needNum'
-const userStopParams = 'pid'
-
 const listQueryStateParamsDic = {
 	/*
 		初始化的时候将listQueryStateParams的value转成数组
 	*/
 }
-
-const periodStateParams = 'gid pid status needNum buyNum luckyId luckyUserId finalDate'
-
-const periodInitBuyParams = 'pid limitDate finalDate needNum buyNum'
-const periodInitFigureParams = 'pid'
 
 //
 let statusTimerDic = {
@@ -56,6 +56,7 @@ let statusTimerDic = {
  	}
  */
 }
+
 
 //初始化
 exports.init = (callback) => {
@@ -142,8 +143,7 @@ exports.onProductStatusChange = (gid, status, isForce) => {
 				console.warn('period start error', err)
 			}
 		})
-	} else{
-	//强制停止期数se if (isForce && status == productStatus.Invalid) {
+	} else if (isForce && status == productStatus.Invalid) { //强制停止期数
 		onPeriodForceStop(gid, (err, result) => {
 			if (err) {
 				console.warn('period stop error', err)
@@ -234,10 +234,11 @@ exports.onBuy = (userId, buyInfo, callback) => {
 		    	let curTime = curDate.getTime()
 		    	let limitTime = curTime + limitMs
 		    	let limitDate = new Date(limitTime)
+		    	let gid = result.gid
 
 	    		let periodTimerInfo = {
 	    			pid : pid,
-	    			gid : result.gid,
+	    			gid : gid,
 	    			limitDate : limitDate,
 	    			status : periodStatus.Figure,
 	    		}
@@ -247,6 +248,8 @@ exports.onBuy = (userId, buyInfo, callback) => {
     			periodInfo.status = periodStatus.Figure //进入计算状态
 
     			onPeriodStatusTimerStart(periodTimerInfo) //进入下一个时间状态
+
+    			setTimeout(onPeriodStart.bind(null, gid)) //开启新一期
     		}else{
     			periodInfo.remainIds = remainIds //保存新的id
     		}
@@ -270,12 +273,13 @@ exports.onBuy = (userId, buyInfo, callback) => {
 	})
 }
 
+//获取期数信息
 exports.getPeriodInfo = (pid, callback) =>{
 	async.waterfall([
-		(callback) => { //获取期数信息
+		(callback) => { 
 			Period.findOne({pid : pid}, periodStateParams , callback)
 		},
-	    (result, callback) => { //判断是否足够购买
+	    (result, callback) => { 
 	    	if (!result) {
 	    		callback(getError('PERIOD_INFO_NOT_EXIST'), pid)
 	    		return
@@ -515,7 +519,9 @@ let onPeriodStart = (gid, callback) =>{
 	    	callback(null, result)
 	    },	
 	], (err, result) => { //返回结果
-		callback(err, result)
+		if (callback) {
+			callback(err, result)
+		}
 	})
 }
 
@@ -532,10 +538,14 @@ let onPeriodStatusTimerEnd_ = (pid) =>{
 
 	switch(status){
 		case periodStatus.Buy : //可购买 -> 失败（购买人数不足超时）
-			onBuyStatusToFailedStatus(pid)
+			let gid = periodInfo.gid
+			onBuyStatusToFailedStatus(pid, (err, result) => {
+
+				setTimeout(onPeriodStart.bind(null, gid)) //开启新一期
+			})
 			break
 		case periodStatus.Figure : //即将揭晓
-			onFigureToFinishStatus(pid)
+			onFigureToFinishStatus(pid) //进入结算状态
 			break
 		default :
 			console.warn('period status error with timer:', pid, status)
